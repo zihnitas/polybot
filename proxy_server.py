@@ -12,7 +12,44 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.20.0"
+VERSION = "3.21.0"
+
+# ─────────────────────────────────────────────
+# KALICI LOG SİSTEMİ — günlük dosyaya yazar
+# ─────────────────────────────────────────────
+import datetime as _dt
+
+def _log_file_path():
+    """Günlük log dosyası: btc_5m_bot_YYYY-MM-DD.log"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    date_str = _dt.datetime.now().strftime('%Y-%m-%d')
+    return os.path.join(script_dir, f'btc_5m_bot_{date_str}.log')
+
+def write_bot_log(level, message, source='bLog'):
+    """Log satırını günlük dosyaya yaz."""
+    try:
+        now = _dt.datetime.now().strftime('%H:%M:%S')
+        line = f"{now} [{level:5}] [{source}] {message}\n"
+        with open(_log_file_path(), 'a', encoding='utf-8') as lf:
+            lf.write(line)
+    except Exception as e:
+        print(f"[LOG] Yazma hatası: {e}")
+
+def _log_file_path():
+    """Günlük log dosyası yolu — btc_5m_bot_YYYY-MM-DD.log"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    date_str = _dt.datetime.now().strftime('%Y-%m-%d')
+    return os.path.join(script_dir, f'btc_5m_bot_{date_str}.log')
+
+def write_bot_log(level, message, source='bLog'):
+    """Log satırını günlük dosyaya yaz."""
+    try:
+        now = _dt.datetime.now().strftime('%H:%M:%S')
+        line = f"{now} [{level:5}] [{source}] {message}\n"
+        with open(_log_file_path(), 'a', encoding='utf-8') as f:
+            f.write(line)
+    except Exception as e:
+        print(f"[LOG] Yazma hatası: {e}")
 
 app = Flask(__name__)
 CORS(app)
@@ -1039,15 +1076,59 @@ def withdraw():
 # ── Bot log ───────────────────────────────────
 @app.route('/bot_log')
 def bot_log():
-    log_file = os.path.join(os.path.dirname(__file__), 'btc_5m_bot.log')
+    # Önce günlük dosyayı dene, yoksa eski dosyaya bak
+    log_file = _log_file_path()
+    if not os.path.exists(log_file):
+        log_file = os.path.join(os.path.dirname(__file__), 'btc_5m_bot.log')
     try:
         with open(log_file, 'r', encoding='utf-8') as f:
             lines = f.readlines()
-        return jsonify({'lines': [l.strip() for l in lines[-50:] if l.strip()]})
+        return jsonify({'lines': [l.strip() for l in lines[-200:] if l.strip()]})
     except FileNotFoundError:
         return jsonify({'lines': []})
     except Exception as e:
         return jsonify({'lines': [], 'error': str(e)})
+
+@app.route('/log_write', methods=['POST'])
+def log_write():
+    """Dashboard'dan gelen log satırını dosyaya yaz."""
+    try:
+        d = request.json or {}
+        level   = d.get('level', 'INFO').upper()
+        message = d.get('message', '')
+        source  = d.get('source', 'bLog')
+        if message:
+            write_bot_log(level, message, source)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/log_list')
+def log_list():
+    """Mevcut log dosyalarını listele."""
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        files = sorted([
+            f for f in os.listdir(script_dir)
+            if f.startswith('btc_5m_bot_') and f.endswith('.log')
+        ], reverse=True)
+        return jsonify({'files': files})
+    except Exception as e:
+        return jsonify({'files': [], 'error': str(e)})
+
+@app.route('/log_download')
+def log_download():
+    """Belirli log dosyasını indir."""
+    try:
+        date = request.args.get('date', _dt.datetime.now().strftime('%Y-%m-%d'))
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        log_file = os.path.join(script_dir, f'btc_5m_bot_{date}.log')
+        if os.path.exists(log_file):
+            return send_file(log_file, as_attachment=True,
+                           download_name=f'polybot_log_BTC5_{date}.txt')
+        return jsonify({'error': 'Dosya bulunamadı'})
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 # ── Pozisyon debug ────────────────────────────
 @app.route('/check_positions')

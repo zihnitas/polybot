@@ -333,7 +333,7 @@ tr:hover td{background:rgba(0,212,255,.04);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.17.1'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.19.0'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -359,10 +359,29 @@ function lg(id,msg,t){
   // Kalıcı hafızaya ekle
   _logMemory.push({time:time,id:id,msg:msg,t:t});
   if(_logMemory.length>5000) _logMemory.shift();
+  // Proxy'ye kalıcı log yaz — sadece önemli seviyeler (INFO hariç kalabalık olmasın)
+  if(t==='s'||t==='o'||t==='e'||t==='w'){
+    var levelMap={'s':'SIG  ','o':'OK   ','e':'ERR  ','w':'WARN '};
+    // Fire-and-forget, hata olursa sessizce geç
+    fetch(PROXY+'/log_write',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({level:levelMap[t]||'INFO ',message:msg,source:id})
+    }).catch(function(){});
+  }
 }
 function clrLog(id){ document.getElementById(id).innerHTML=''; lg(id,'Log temizlendi.'); }
 
 function downloadLog(botId){
+  // Önce proxy'deki kalıcı log dosyasını indir
+  var today=new Date().toISOString().slice(0,10);
+  var a=document.createElement('a');
+  a.href=PROXY+'/log_download?date='+today;
+  a.download='polybot_log_BTC5_'+today+'.txt';
+  a.click();
+}
+function downloadLogMemory(botId){
+  // Hafızadaki logu indir (mevcut oturum)
   var lines=_logMemory.filter(function(e){
     return !botId || e.id===botId;
   }).map(function(e){
@@ -937,20 +956,18 @@ function detectFVGInSlot(candles, slotSec){
 }
 
 // FVG ihlal (mitigation) kontrolü
-// Bir FVG kesinleştikten sonra sonraki mumlardan biri boşluğu doldurursa → iptal
-// Bullish FVG: mum.low <= fvg.bottom  (alt sınırı kırdı)
-// Bearish FVG: mum.high >= fvg.top    (üst sınırı kırdı)
+// Herhangi bir mum (açık veya kapalı) FVG boşluğunu doldurursa → kalıcı geçersiz
+// Bullish FVG: mum.low <= fvg.bottom
+// Bearish FVG: mum.high >= fvg.top
 function isFVGMitigated(fvg, candles){
   // fvg.idx: FVG'nin 3. mumunun (c3) index'i
-  // Sonraki mumlar: idx+1'den itibaren
+  // Sonraki tüm mumlar (açık mum dahil)
   var afterCandles = candles.slice(fvg.idx + 1);
   for(var i=0; i<afterCandles.length; i++){
     var c = afterCandles[i];
     if(fvg.type === 'bullish'){
-      // Herhangi bir mum gövde/gölgesi FVG'nin alt sınırına (bottom) ulaştıysa ihlal
       if(c.low <= fvg.bottom) return true;
     } else {
-      // Bearish: herhangi bir mum üst sınıra (top) ulaştıysa ihlal
       if(c.high >= fvg.top) return true;
     }
   }
@@ -1192,13 +1209,13 @@ async function _bScan(){
   lg('bLog','FVG tarama: '+allCandles1m.length+' mum (30 1dk) → '+allFVGs.length+' FVG bulundu','i');
 
   // En yeni FVG'den başla, ihlal edilmemiş ilkini bul — bu tek geçerli sinyal
+  // Açık mum da dahil — ihlal eden her mum kalıcı geçersiz sayar
   var fvg = null;
   for(var fi=allFVGs.length-1; fi>=0; fi--){
     if(!isFVGMitigated(allFVGs[fi], fvgCandlesWithOpen)){
       fvg = allFVGs[fi];
-      break; // Bulundu — diğer FVG'lere bakma
+      break;
     }
-    // İhlal edilmiş FVG'leri loglamıyoruz — önemsiz
   }
 
   var tDir=null;
@@ -1776,13 +1793,23 @@ async function updateChartOnly(){
     var cls5=c5.map(function(c){return c.close;});
     if(bChart){
       bChart.data.datasets[0].data=c1.map(function(c){return {x:c.time,o:c.open,h:c.high,l:c.low,c:c.close};});
-      // Son 20 mumda ihlal edilmemiş FVG'leri göster
+      // Son 20 mumda ihlal edilmemiş FVG'leri göster + sinyal göstergesini güncelle
       var _c1=c1.slice();
       var _oc=null;
       if(_c1.length>0 && Date.now()<_c1[_c1.length-1].time+60000){_oc=_c1[_c1.length-1];_c1=_c1.slice(0,-1);}
       var _wo=_oc?_c1.concat([_oc]):_c1;
-      bChart._fvgData=detectFVG(_c1).filter(function(f){return !isFVGMitigated(f,_wo);});
+      var _allFvgs=detectFVG(_c1);
+      bChart._fvgData=_allFvgs.filter(function(f){return !isFVGMitigated(f,_wo);});
       bChart.update('none');
+      // FVG sinyal göstergesini de güncelle — en yeni ihlal edilmemiş FVG
+      if(!BS.run) {
+        var _liveFvg=null;
+        for(var _fi=_allFvgs.length-1;_fi>=0;_fi--){
+          if(!isFVGMitigated(_allFvgs[_fi],_wo)){_liveFvg=_allFvgs[_fi];break;}
+        }
+        if(_liveFvg) showFVGSignal(_liveFvg.type==='bullish'?'UP':'DOWN','fvg_signal_bar');
+        else showFVGSignal(null,'fvg_signal_bar');
+      }
     }
     if(bChart5m){
       var cd5=c5.slice(-3).map(function(d){return {x:d.time,o:d.open,h:d.high,l:d.low,c:d.close};});
