@@ -1,0 +1,2228 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PolyBot Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.1.1/dist/chartjs-chart-financial.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+:root{--bg:#080c10;--bg2:#0e1520;--bg3:#162030;--border:#253545;--accent:#00d4ff;--green:#00ff88;--red:#ff4466;--yellow:#ffd700;--muted:#7a9ab0;--text:#d8eaf8;--white:#f0f8ff;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Space Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.wrap{max-width:1440px;margin:0 auto;padding:20px;position:relative;z-index:1;}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);}
+.logo span{color:var(--accent);}
+.hdr-right{display:flex;gap:10px;align-items:center;}
+.badge{display:flex;align-items:center;gap:7px;font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg2);}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;}
+.dot.dry{background:var(--yellow);box-shadow:0 0 8px var(--yellow);}
+.dot.off{background:var(--red);box-shadow:0 0 8px var(--red);animation:none;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tabs{display:flex;gap:2px;margin-bottom:16px;border-bottom:1px solid var(--border);}
+.tab{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:9px 18px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:all .2s;}
+.tab:hover{color:var(--text);}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.pane{display:none;}.pane.on{display:block;}
+.sbar{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:10px;margin-bottom:16px;padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;}
+.si label{display:block;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.si input,.si select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--accent);font-family:'Space Mono',monospace;font-size:13px;padding:6px 9px;outline:none;transition:border-color .2s;}
+.si input:focus,.si select:focus{border-color:var(--accent);}
+.btn{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;padding:8px 14px;border-radius:4px;border:none;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.btn-a{background:var(--accent);color:var(--bg);}.btn-a:hover{background:#00b8d9;transform:translateY(-1px);}
+.btn-r{background:transparent;border:1px solid var(--red);color:var(--red);}.btn-r:hover{background:var(--red);color:var(--bg);}
+.grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px;}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;position:relative;overflow:hidden;transition:border-color .2s;}
+.card:hover{border-color:var(--accent);}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:.4;}
+.card.g::before{background:var(--green);}
+.card.r::before{background:var(--red);}
+.card.y::before{background:var(--yellow);}
+.card.p::before{background:#a855f7;}
+.cl{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.cv{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--white);line-height:1;}
+.cv.g{color:var(--green);}.cv.r{color:var(--red);}.cv.y{color:var(--yellow);}
+.cs{font-size:10px;color:var(--muted);margin-top:3px;}
+.mg{display:grid;grid-template-columns:1fr 360px;gap:14px;}
+.bg{display:grid;grid-template-columns:1fr 360px;gap:14px;}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg3);}
+.pt{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--white);letter-spacing:1px;text-transform:uppercase;}
+.cb{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--muted);}
+table{width:100%;border-collapse:collapse;}
+th{font-size:9px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;padding:8px 11px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg3);}
+td{padding:8px 11px;font-size:12px;border-bottom:1px solid rgba(37,53,69,.6);vertical-align:middle;color:var(--text);}
+tr:hover td{background:rgba(0,212,255,.04);}
+.mn{color:var(--white);font-size:12px;font-weight:600;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.stag{font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:.5px;text-transform:uppercase;font-weight:700;}
+.td{background:rgba(0,212,255,.15);color:var(--accent);}
+.tu{background:rgba(255,215,0,.15);color:var(--yellow);}
+.ts{background:rgba(0,255,136,.15);color:var(--green);}
+.tb{background:rgba(255,68,102,.15);color:var(--red);}
+.sy{color:var(--green);font-weight:700;}.sn{color:var(--red);font-weight:700;}
+.wn{color:var(--green);}.ls{color:var(--red);}
+.lp{display:flex;flex-direction:column;}
+.lc{padding:10px;overflow-y:auto;max-height:420px;font-size:11px;line-height:1.8;}
+.le{padding:3px 8px;border-radius:3px;margin-bottom:2px;animation:fi .3s ease;}
+@keyframes fi{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.li{color:#9ab8cc;}
+.ls2{color:var(--accent);background:rgba(0,212,255,.07);}
+.lo{color:#00ff99;background:rgba(0,255,136,.07);}
+.le2{color:#ff6680;background:rgba(255,68,102,.07);}
+.lw{color:var(--yellow);background:rgba(255,215,0,.07);}
+.lt{color:var(--muted);margin-right:5px;}
+.rb{padding:10px 14px;border-top:1px solid var(--border);background:var(--bg3);}
+.rl{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;}
+.rbg{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.rbf{height:100%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));border-radius:2px;transition:width .5s ease;}
+.pb{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:3px;}
+.pbf{height:100%;border-radius:2px;transition:width .5s,background .5s;}
+.mib{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:14px;align-items:center;}
+.mil label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px;}
+.mil span{font-size:13px;color:var(--white);font-weight:700;}
+.prbb{height:6px;background:var(--border);border-radius:3px;overflow:hidden;display:flex;margin-top:5px;}
+.pru{height:100%;background:var(--green);transition:width .5s;}
+.prd{height:100%;background:var(--red);transition:width .5s;}
+.es{text-align:center;padding:36px;color:var(--muted);font-size:12px;}
+.es div{font-size:24px;margin-bottom:6px;}
+@media(max-width:1100px){.mg,.bg{grid-template-columns:1fr}.grid6,.grid5{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo">POLY<span>BOT</span> <span style="font-size:12px;color:var(--muted);font-weight:400">DASHBOARD</span> <span id="versionBadge" style="font-size:10px;color:var(--accent);font-weight:600;margin-left:8px;opacity:0.7">v--</span></div>
+  <div class="hdr-right">
+    <div class="badge" id="balBadge" style="color:var(--green);font-weight:700">BAKİYE: $—</div>
+    <div class="badge"><div class="dot dry" id="sDot"></div><span id="sTxt">DEMO</span></div>
+    <span id="clk" style="font-size:11px;color:var(--muted)"></span>
+  </div>
+</header>
+
+
+<!-- PORTFÖY ÖZET BAR -->
+<div id="portfolio_bar" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;">
+  <div style="text-align:center">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Bakiye</div>
+    <div id="pf_balance" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--green)">$—</div>
+    <div style="font-size:8px;margin-top:2px">
+      <a id="pf_scan_link" href="https://polygonscan.com/address/0xf32F6e0F09EEc34ebac499e704f57728fAB52853" target="_blank" style="color:var(--accent);text-decoration:none">🔗 Polygonscan</a>
+    </div>
+  </div>
+  <div style="text-align:center">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">BTC P&L</div>
+    <div id="pf_btc" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--muted)">$0.00</div>
+  </div>
+  <div style="text-align:center">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Toplam Maliyet</div>
+    <div id="pf_cost" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--muted)">$0.00</div>
+  </div>
+  <div style="text-align:center">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Toplam Redeem</div>
+    <div id="pf_redeem" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--muted)">$0.00</div>
+  </div>
+  <div style="text-align:center">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Toplam Deposit</div>
+    <div id="pf_deposit" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--yellow)" title="Tıkla ve toplam yatırdığın miktarı gir">$0.00</div>
+    <div style="font-size:8px;color:var(--muted);margin-top:2px"><input type="number" id="deposit_input" placeholder="Deposit $" step="0.01" style="width:70px;background:transparent;border:1px solid var(--border);color:var(--yellow);padding:1px 4px;border-radius:3px;font-size:8px;text-align:center" onchange="saveDeposit(this.value)"></div>
+  </div>
+  <div style="text-align:center;border-left:1px solid var(--border);padding-left:12px">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Net P&L</div>
+    <div id="pf_total" style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--white)">$0.00</div>
+    <div id="pf_wr" style="font-size:9px;color:var(--muted);margin-top:2px">0 işlem | Başarı: —</div>
+  </div>
+</div>
+
+<!-- Cüzdan & Redeem Paneli — Global, sekmelerin üstünde -->
+<div class="panel" style="margin-bottom:14px">
+  <div class="ph"><span class="pt">Cüzdan & Redeem</span>
+    <button onclick="manualRedeem()" style="font-size:9px;padding:3px 10px;background:var(--green);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700">⚡ REDEEM</button>
+    <button onclick="forceRedeem()" style="font-size:9px;padding:3px 10px;background:var(--yellow);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="Cache temizleyip tekrar dene">🔄 FORCE</button>
+    <button onclick="polySync()" style="font-size:9px;padding:3px 10px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="Polymarket'tan gerçek işlem geçmişini çek">🔃 POLY SYNC</button>
+    <button onclick="checkPositions()" style="font-size:9px;padding:3px 10px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="Polymarket'taki gerçek pozisyonları göster">🔍 POZİSYON</button>
+    <button onclick="cleanStaleWins()" style="font-size:9px;padding:3px 10px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="pnl=0 olan eski win kayıtlarını temizle">🧹 TEMİZLE</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px;padding:8px 10px 4px;text-align:center">
+    <div>
+      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Bekleyen</div>
+      <div id="rdm_pending" style="font-size:14px;font-weight:800;color:var(--yellow)">$0.00</div>
+    </div>
+    <div>
+      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Alındı</div>
+      <div id="rdm_done" style="font-size:14px;font-weight:800;color:var(--green)">$0.00</div>
+    </div>
+    <div>
+      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Maliyet</div>
+      <div id="rdm_cost" style="font-size:14px;font-weight:800;color:var(--red)">$0.00</div>
+    </div>
+    <div>
+      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Net Kâr</div>
+      <div id="rdm_net" style="font-size:14px;font-weight:800;color:var(--accent)">$0.00</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;align-items:stretch;justify-content:center">
+      <div style="display:flex;gap:4px">
+        <input id="transfer_amount" type="number" placeholder="Miktar" min="0.1" step="0.1"
+          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--accent);font-family:'Space Mono',monospace;font-size:11px;padding:4px 6px;outline:none;min-width:0">
+        <button onclick="doWithdraw()" style="font-size:9px;padding:4px 8px;background:transparent;border:1px solid var(--yellow);color:var(--yellow);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;white-space:nowrap">⬇ ÇEK</button>
+        <button onclick="doDeposit()" style="font-size:9px;padding:4px 8px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;white-space:nowrap">⬆ YATIR</button>
+      </div>
+      <div style="font-size:9px;color:var(--muted)" id="transfer_status">Proxy→MM (Çek) | MM→Proxy (Yatır)</div>
+    </div>
+  </div>
+  <div style="font-size:9px;color:var(--muted);text-align:center;padding:0 10px 6px" id="rdm_status">—</div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" onclick="sw('poly')">POLYMARKET GENEL</button>
+  <button class="tab" onclick="sw('btc')">BTC 5DK UP/DOWN</button>
+</div>
+
+<!-- ========== TAB 1 ========== -->
+<div class="pane on" id="tp">
+  <div class="sbar">
+    <div class="si"><label>Risk/İşlem ($)</label><input type="number" id="p_risk" value="1.00" min="0.1" step="0.1"></div>
+    <div class="si"><label>Max Risk ($)</label><input type="number" id="p_max" value="10.00" min="1" step="1"></div>
+    <div class="si"><label>Min Hacim ($)</label><input type="number" id="p_vol" value="10000" min="1000" step="1000"></div>
+    <div class="si"><label>Mod</label><select id="p_mod"><option value="dry">Kuru</option><option value="live">CANLI</option></select></div>
+    <div style="display:flex;flex-direction:column;gap:5px;justify-content:flex-end">
+      <button class="btn btn-a" onclick="pApply()">UYGULA</button>
+      <button class="btn btn-r" onclick="pClear()">SIFIRLA</button>
+    </div>
+  </div>
+  <div class="grid6">
+    <div class="card"><div class="cl">Toplam Sinyal</div><div class="cv" id="p_ts">0</div><div class="cs">Bu oturumda</div></div>
+    <div class="card g"><div class="cl">Kazanılan</div><div class="cv g" id="p_tw">0</div><div class="cs" id="p_wr">Başarı: —</div></div>
+    <div class="card r"><div class="cl">Kaybedilen</div><div class="cv r" id="p_tl">0</div><div class="cs" id="p_lr">Kayıp: —</div></div>
+    <div class="card y"><div class="cl">Açık Pos.</div><div class="cv y" id="p_op">0</div><div class="cs" id="p_or">Risk: $0</div></div>
+    <div class="card"><div class="cl">Net P&L</div><div class="cv" id="p_pnl">$0.00</div><div class="pb"><div class="pbf" id="p_pb" style="width:50%;background:var(--muted)"></div></div></div>
+    <div class="card"><div class="cl">Tarama</div><div class="cv" id="p_sc">0</div><div class="cs" id="p_ls">Son: —</div></div>
+  </div>
+  <div class="mg">
+    <div class="panel">
+      <div class="ph"><span class="pt">Sinyal & Emir Geçmişi</span><span class="cb" id="p_sb">0 kayıt</span></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Saat</th><th>Piyasa</th><th>Strateji</th><th>Taraf</th><th>Fiyat</th><th>Risk</th><th>Sonuç</th></tr></thead><tbody id="p_tb"><tr><td colspan="7"><div class="es"><div>--</div>Bot başlatıldığında sinyaller burada görünecek</div></td></tr></tbody></table></div>
+      <div class="rb"><div class="rl"><span>Kullanılan Risk</span><span id="p_rl">$0 / $10</span></div><div class="rbg"><div class="rbf" id="p_rf" style="width:0%"></div></div></div>
+    </div>
+    <div class="panel lp">
+      <div class="ph"><span class="pt">Log</span><button class="btn" style="font-size:9px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--muted)" onclick="clrLog('pLog')">SİL</button><button class="btn" style="font-size:9px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--accent);margin-left:4px" onclick="downloadLog('pLog')">⬇ LOG</button></div>
+      <div class="lc" id="pLog"><div class="le li"><span class="lt">--:--:--</span>Dashboard yüklendi.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TAB 2 BTC ========== -->
+<div class="pane" id="tb2">
+  <div class="sbar" style="grid-template-columns:repeat(5,1fr) auto;">
+    <div class="si"><label>Maliyet Üst Sınır ($)</label><input type="number" id="b_bet" value="2.50" min="1" step="0.5"></div>
+    <div class="si"><label>Max Fiyat (≤)</label><input type="number" id="b_mp" value="0.50" min="0.10" max="0.90" step="0.01"></div>
+    <div class="si"><label>Tarama (sn)</label><input type="number" id="b_interval" value="15" min="5" max="60" step="5"></div>
+    <div class="si"><label>Min Denge (%)</label><input type="number" id="b_balance" value="35" min="30" max="49" step="1"></div>
+    <div class="si"><label>Mod</label><select id="b_mod"><option value="dry">DEMO</option><option value="live">CANLI (Gerçek Para)</option></select></div>
+    <div style="display:flex;flex-direction:column;gap:5px;justify-content:flex-end">
+      <button class="btn btn-a" id="startStopBtn" onclick="bToggle()">BAŞLAT</button>
+    </div>
+  </div>
+
+  <!-- FVG Sinyal Göstergesi — grafik içinde -->
+
+  <div class="mib">
+    <div class="mil"><label>Mevcut Piyasa</label><span id="b_mt">Bekleniyor...</span></div>
+    <div class="mil"><label>Kapanış</label><span id="b_me">—</span></div>
+    <div class="mil">
+      <label>Olasılık</label>
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
+        <span style="color:var(--green)" id="b_up">UP 50%</span>
+        <span style="color:var(--red)" id="b_dn">DOWN 50%</span>
+      </div>
+      <div class="prbb"><div class="pru" id="b_ub" style="width:50%"></div><div class="prd" id="b_db" style="width:50%"></div></div>
+    </div>
+    <div class="mil" style="text-align:right"><label>Sonraki Tarama</label><span id="b_ns" style="color:var(--accent);font-size:20px">—</span></div>
+  </div>
+
+  <div class="grid5">
+    <div class="card"><div class="cl">BTC Fiyat</div><div class="cv" id="b_pr" style="font-size:18px">$—</div><div class="cs" id="b_pc">—</div></div>
+    <div class="card g"><div class="cl">Kazanma / Kayıp</div><div class="cv g" id="b_wl">0 / 0</div><div class="cs" id="b_wr">Başarı: —</div></div>
+    <div class="card"><div class="cl">Bugün P&L</div><div class="cv" id="b_pnl">$0.00</div><div class="pb"><div class="pbf" id="b_pb" style="width:50%;background:var(--muted)"></div></div></div>
+    <div class="card p"><div class="cl">Tüm Zamanlar P&L</div><div class="cv" id="b_allpnl" style="font-size:18px">$0.00</div><div class="cs" id="b_allwr">Tüm işlemler</div></div>
+  </div>
+
+  <!-- Ana grid: Sol=Grafikler, Sağ=Redeem+İşlem+Log -->
+  <div style="display:grid;grid-template-columns:1fr 420px;gap:14px">
+
+    <!-- Sol kolon: P&L + Grafikler -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="panel">
+        <div class="ph"><span class="pt">Kümülatif P&L Grafiği</span><span class="cb" id="b_trd">0 işlem</span></div>
+        <div style="padding:6px 8px"><canvas id="pnlChart" height="55"></canvas></div>
+      </div>
+      <!-- İki grafik yan yana: 5dk solda, 1dk sağda -->
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:10px">
+        <div class="panel">
+          <div class="ph"><span class="pt">BTC/USDT 5 Dakika</span><span style="font-size:10px;color:var(--muted)">Son 3 mum</span></div>
+          <div style="padding:8px 8px 4px 8px"><canvas id="btcChart5m" height="180"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><span class="pt">BTC/USDT 1 Dakika</span><span style="font-size:10px;color:var(--muted)">Son 30 mum • Sinyal</span></div>
+          <div style="position:relative;padding:8px 8px 4px 8px">
+            <div id="fvg_signal_bar" style="display:none;position:absolute;top:12px;right:12px;z-index:10;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'Space Mono',monospace;pointer-events:none"></div>
+            <canvas id="btcChart" height="180"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sağ kolon: İşlem Geçmişi + Log -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <!-- İşlem Geçmişi -->
+      <div class="panel" style="flex:1">
+        <div class="ph"><span class="pt">İşlem Geçmişi</span><span id="b_hist_mode" style="font-size:9px;color:var(--muted);margin-left:6px"></span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;border-bottom:1px solid var(--border)">
+          <button id="flt_today" onclick="setBFilter('today')" style="font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);cursor:pointer;font-family:inherit">Bugün</button>
+          <button id="flt_week" onclick="setBFilter('week')" style="font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">7 Gün</button>
+          <button id="flt_all" onclick="setBFilter('all')" style="font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Tümü</button>
+          <span style="color:var(--border);padding:0 2px">|</span>
+          <button id="flt_type_all" onclick="setBTypeFilter('all')" style="font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);cursor:pointer;font-family:inherit">Hepsi</button>
+          <button id="flt_type_win" onclick="setBTypeFilter('win')" style="font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">✅ Kazandı</button>
+          <button id="flt_type_loss" onclick="setBTypeFilter('loss')" style="font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">❌ Kaybetti</button>
+        </div>
+        <div id="open_trade_bar" style="display:none;padding:10px 14px;background:rgba(255,215,0,0.06);border-bottom:2px solid var(--yellow);font-size:11px;flex-wrap:wrap;gap:6px;align-items:center">
+          <span style="color:var(--yellow);font-weight:700;font-size:13px">⏳ AÇIK İŞLEM</span>
+          <span id="open_trade_info" style="color:var(--text);flex:1;min-width:200px">—</span>
+          <span id="open_trade_potential" style="font-size:11px"></span>
+        </div>
+        <div style="overflow-x:auto;overflow-y:auto;max-height:175px">
+          <table style="width:100%;min-width:500px;table-layout:fixed">
+            <colgroup>
+              <col style="width:68px">
+              <col style="width:52px">
+              <col style="width:58px">
+              <col style="width:58px">
+              <col style="width:72px">
+              <col style="width:72px">
+            </colgroup>
+            <thead><tr><th style="white-space:nowrap">Saat</th><th>Yön</th><th>Fiyat</th><th>Maliyet</th><th>Sonuç</th><th>P&L</th></tr></thead>
+          <tbody id="b_tb"><tr><td colspan="6"><div class="es"><div>--</div>Henüz işlem yok</div></td></tr></tbody></table>
+        </div>
+      </div>
+      <!-- Log -->
+      <div class="panel lp">
+        <div class="ph"><span class="pt">BTC Bot Log</span><button class="btn" style="font-size:9px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--muted)" onclick="clrLog('bLog')">SİL</button><button class="btn" style="font-size:9px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--accent);margin-left:4px" onclick="downloadLog('bLog')">⬇ LOG</button></div>
+        <div class="lc" id="bLog" style="max-height:280px"><div class="le li"><span class="lt">--:--:--</span>BTC botu hazır. Ayarları girip Başlat'a basın.</div></div>
+      </div>
+    </div>
+
+</div>
+</div>
+
+
+
+
+
+</div><!-- wrap -->
+
+<script>
+// ================================================================
+// SHARED
+// ================================================================
+var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
+var DASHBOARD_VERSION = '7.16.0'; // major.minor.patch — her güncellemede artır
+function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
+function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
+function tsISO(){ return new Date().toISOString(); }
+setInterval(function(){ document.getElementById('clk').textContent=ts(); },1000);
+document.getElementById('clk').textContent=ts();
+
+// Kalıcı log hafızası — tüm gece birikir
+var _logMemory=[];
+
+function lg(id,msg,t){
+  t=t||'i';
+  var el=document.getElementById(id);
+  var d=document.createElement('div');
+  var cls={'i':'li','s':'ls2','o':'lo','e':'le2','w':'lw'}[t]||'li';
+  d.className='le '+cls;
+  var time=ts();
+  d.innerHTML='<span class="lt">'+time+'</span>'+msg;
+  // En yeni en üste
+  if(el.firstChild) el.insertBefore(d, el.firstChild);
+  else el.appendChild(d);
+  el.scrollTop=0;
+  while(el.children.length>400) el.removeChild(el.lastChild);
+  // Kalıcı hafızaya ekle
+  _logMemory.push({time:time,id:id,msg:msg,t:t});
+  if(_logMemory.length>5000) _logMemory.shift();
+}
+function clrLog(id){ document.getElementById(id).innerHTML=''; lg(id,'Log temizlendi.'); }
+
+function downloadLog(botId){
+  var lines=_logMemory.filter(function(e){
+    return !botId || e.id===botId;
+  }).map(function(e){
+    var tag={'i':'[INFO]','s':'[SIG] ','o':'[OK]  ','e':'[ERR] ','w':'[WARN]'}[e.t]||'[INFO]';
+    return e.time+' '+tag+' ['+e.id+'] '+e.msg;
+  }).join('\n');
+  var botNames={bLog:'BTC5',b15Log:'BTC15',eLog:'ETH',xLog:'XRP',slLog:'SOL',pLog:'POLY'};
+  var botName=botId?botNames[botId]||botId:'ALL';
+  var blob=new Blob([lines],{type:'text/plain'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='polybot_log_'+botName+'_'+new Date().toISOString().slice(0,16).replace('T','_').replace(':','_')+'.txt';
+  a.click();
+}
+
+function sw(tab){
+  _currentTab=tab;
+  var tabs=['poly','btc'];
+  document.querySelectorAll('.tab').forEach(function(b,i){ b.classList.toggle('on',tabs[i]===tab); });
+  document.getElementById('tp').classList.toggle('on',tab==='poly');
+  document.getElementById('tb2').classList.toggle('on',tab==='btc');
+  // Aktif sekmenin durumunu header'da göster
+  var dot=document.getElementById('sDot');
+  var txt=document.getElementById('sTxt');
+  if(tab==='btc'){
+    if(BS.run){dot.className='dot '+(BS.dry?'dry':'');txt.textContent=BS.dry?'DEMO':'CANLI';}
+    else{dot.className='dot off';txt.textContent='DURDURULDU';}
+  } else {
+    dot.className='dot off'; txt.textContent='GENEL';
+  }
+}
+
+// Bakiye güncelle
+async function fetchBalance(){
+  try{
+    var r=await fetch(PROXY+'/balance');
+    var d=await r.json();
+    if(d.balance!==undefined){
+      var el=document.getElementById('balBadge');
+      el.textContent='BAKİYE: $'+parseFloat(d.balance).toFixed(2);
+      el.style.color=d.balance>5?'var(--green)':'var(--yellow)';
+      // Portfolio bar güncelle
+      var pfEl=document.getElementById('pf_balance');
+      if(pfEl){
+        pfEl.textContent='$'+parseFloat(d.balance).toFixed(2);
+        pfEl.style.color=d.balance>5?'var(--green)':'var(--yellow)';
+        var pol=parseFloat(d.proxy_pol||0);
+        var polStr=' | POL: '+(pol>0?pol.toFixed(3)+'⛽':'⚠️ YOK');
+        pfEl.title='Proxy: $'+(d.proxy||0).toFixed(2)+' | EOA: $'+(d.eoa||0).toFixed(2)+' | CLOB: $'+(d.clob||0).toFixed(2)+polStr;
+      }
+      // POL uyarısı
+      var pol=parseFloat(d.proxy_pol||0);
+      if(pol>0 && pol<0.3){
+        var polEl=document.getElementById('balBadge');
+        if(polEl) polEl.title='⚠️ POL az: '+pol.toFixed(4)+' — gas bitmeden yükle!';
+      }
+    }
+  }catch(e){}
+}
+setInterval(fetchBalance,30000);
+fetchBalance();
+
+// ================================================================
+// CANLI FİYAT TICKER — 2sn'de bir CLOB midpoint direkt çek (proxy bypass)
+// ================================================================
+var _livePriceTmr=null;
+var _currentTab='poly'; // sw() fonksiyonu bunu günceller
+var _liveTokens={up:'', down:''}; // Aktif market token ID'leri — taramada set edilir
+
+async function _fetchLivePrice(){
+  try{
+    if(_currentTab==='btc'){
+      // Token ID varsa direkt CLOB midpoint — en hızlı yol
+      if(_liveTokens.up && _liveTokens.down){
+        var [rU, rD] = await Promise.all([
+          fetch('https://clob.polymarket.com/midpoint?token_id='+_liveTokens.up,{cache:'no-store'}),
+          fetch('https://clob.polymarket.com/midpoint?token_id='+_liveTokens.down,{cache:'no-store'})
+        ]);
+        var mU=await rU.json(), mD=await rD.json();
+        var up=parseFloat(mU.mid||0), dn=parseFloat(mD.mid||0);
+        // mid toplamı ~1 olmalı — sanity check
+        if(up>0.01 && up<0.99){
+          var uEl=document.getElementById('b_up'), dEl=document.getElementById('b_dn');
+          var uBar=document.getElementById('b_ub'), dBar=document.getElementById('b_db');
+          if(uEl) uEl.textContent='UP '+(up*100).toFixed(1)+'¢';
+          if(dEl) dEl.textContent='DOWN '+(dn>0.01?dn*100:(1-up)*100).toFixed(1)+'¢';
+          if(uBar) uBar.style.width=(up*100)+'%';
+          if(dBar) dBar.style.width=((dn>0.01?dn:(1-up))*100)+'%';
+          // BS'ye de yaz — tarama sırasında kullanılsın
+          BS._liveUp=up; BS._liveDn=dn>0.01?dn:+(1-up).toFixed(4);
+        }
+      } else {
+        // Token ID yoksa proxy'den çek (fallback)
+        var slot5=Math.floor(Date.now()/1000/300)*300;
+        var r=await fetchTimeout(PROXY+'/btc_market?slot='+slot5,3000);
+        var d=await r.json();
+        if(d&&d.market){
+          var up=parseFloat(d.market.up_price||0.5), dn=parseFloat(d.market.down_price||0.5);
+          var uEl=document.getElementById('b_up'), dEl=document.getElementById('b_dn');
+          var uBar=document.getElementById('b_ub'), dBar=document.getElementById('b_db');
+          if(uEl) uEl.textContent='UP '+(up*100).toFixed(1)+'¢';
+          if(dEl) dEl.textContent='DOWN '+(dn*100).toFixed(1)+'¢';
+          if(uBar) uBar.style.width=(up*100)+'%';
+          if(dBar) dBar.style.width=(dn*100)+'%';
+          // Token ID'leri kaydet
+          if(d.market.up_token) _liveTokens.up=d.market.up_token;
+          if(d.market.down_token) _liveTokens.down=d.market.down_token;
+        }
+      }
+    }
+  }catch(e){}
+}
+_livePriceTmr=setInterval(_fetchLivePrice, 2000);
+
+
+async function fetchVersion(){
+  // Dashboard versiyonunu hemen göster
+  document.getElementById('versionBadge').textContent='ui:v'+DASHBOARD_VERSION;
+  try{
+    var r=await fetch(PROXY+'/version');
+    var d=await r.json();
+    if(d.version) document.getElementById('versionBadge').textContent='ui:v'+DASHBOARD_VERSION+' | proxy:v'+d.version;
+  }catch(e){}
+}
+fetchVersion();
+
+// ================================================================
+// TAB 1: POLYMARKET GENEL
+// ================================================================
+var PS={sigs:[],sc:0,oRisk:0,wins:0,loss:0,pnl:0,run:false,dry:true,tmr:null,cfg:{risk:1,max:10,vol:10000}};
+
+function pRb(){
+  var m=PS.cfg.max, p=Math.min(100,(PS.oRisk/m)*100);
+  document.getElementById('p_rf').style.width=p+'%';
+  document.getElementById('p_rl').textContent='$'+PS.oRisk.toFixed(2)+' / $'+m;
+}
+function pApply(){
+  PS.cfg.risk=parseFloat(document.getElementById('p_risk').value)||1;
+  PS.cfg.max=parseFloat(document.getElementById('p_max').value)||10;
+  PS.cfg.vol=parseInt(document.getElementById('p_vol').value)||10000;
+  PS.dry=document.getElementById('p_mod').value==='dry';
+  document.getElementById('sDot').className='dot '+(PS.dry?'dry':'');
+  document.getElementById('sTxt').textContent=PS.dry?'KURU':'CANLI';
+  pRb(); pStats();
+  lg('pLog','Ayarlar: Risk=$'+PS.cfg.risk+' Max=$'+PS.cfg.max+' Mod='+(PS.dry?'KURU':'CANLI'),'w');
+  pStartScan();
+}
+async function pFetch(){
+  var r=await fetch(PROXY+'/markets');
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+function pParse(m){
+  try{
+    var oc=JSON.parse(m.outcomes||'["Yes","No"]');
+    var pr=JSON.parse(m.outcomePrices||'[0.5,0.5]');
+    var tk=JSON.parse(m.clobTokenIds||'[]');
+    if(pr.length<2||tk.length<2) return null;
+    var yi=oc.findIndex(function(o){return o.toLowerCase()==='yes';}); var yI=yi>=0?yi:0;
+    var ni=oc.findIndex(function(o){return o.toLowerCase()==='no';}); var nI=ni>=0?ni:1;
+    return {yp:parseFloat(pr[yI]),np:parseFloat(pr[nI]),yt:tk[yI],nt:tk[nI]};
+  }catch(e){return null;}
+}
+function pFilter(m,p){
+  if(!m.acceptingOrders) return false;
+  if((parseFloat(m.volume)||0)<PS.cfg.vol) return false;
+  var es=m.endDate||m.endDateIso;
+  if(es){var d=(new Date(es)-new Date())/86400000; if(d<3||d>90) return false;}
+  if(p.yp<0.05||p.yp>0.95||p.np<0.05||p.np>0.95) return false;
+  return true;
+}
+function pStrat(m,p){
+  var yp=p.yp,np=p.np,q=(m.question||'').toLowerCase();
+  if(yp>=0.35&&yp<=0.65&&np>=0.35&&np<=0.65){
+    if(yp<np-0.05) return {oc:'YES',price:yp,st:'dengeli',r:'Dengeli YES='+(yp*100).toFixed(1)+'%'};
+    if(np<yp-0.05) return {oc:'NO', price:np,st:'dengeli',r:'Dengeli NO='+(np*100).toFixed(1)+'%'};
+  }
+  var pos=['wins','elected','approved','passes','reaches','increase'];
+  var neg=['loses','rejected','fails','denied','decrease','fall','drop'];
+  for(var i=0;i<pos.length;i++) if(q.includes(pos[i])&&yp>=0.05&&yp<=0.45) return {oc:'YES',price:yp,st:'sentiment',r:'Sentiment('+pos[i]+')'};
+  for(var i=0;i<neg.length;i++) if(q.includes(neg[i])&&np>=0.05&&np<=0.45) return {oc:'NO',price:np,st:'sentiment',r:'Sentiment('+neg[i]+')'};
+  if(yp>=0.05&&yp<=0.20) return {oc:'YES',price:yp,st:'underdog',r:'Underdog YES '+(yp*100).toFixed(1)+'%'};
+  if(np>=0.05&&np<=0.20) return {oc:'NO',price:np,st:'underdog',r:'Underdog NO '+(np*100).toFixed(1)+'%'};
+  return null;
+}
+function pAddSig(m,sig,p){
+  var sz=Math.max(Math.round(PS.cfg.risk/sig.price*100)/100,0.01);
+  var tk=sig.oc==='YES'?p.yt:p.nt;
+  var rec={id:Date.now(),time:ts(),market:m.question||'?',st:sig.st,oc:sig.oc,price:sig.price,size:sz,risk:parseFloat((sz*sig.price).toFixed(2)),status:'open',pnl:0,ed:m.endDateIso||'?',dry:PS.dry,tk:tk};
+  PS.sigs.unshift(rec); PS.oRisk+=rec.risk;
+  pRenderSigs(); pStats(); return rec;
+}
+function pMark(id,res){
+  var r=PS.sigs.find(function(s){return s.id===id;});
+  if(!r) return;
+  if(res==='win'){r.status='win';r.pnl=+(r.size*(1-r.price)).toFixed(2);PS.wins++;PS.pnl+=r.pnl;PS.oRisk-=r.risk;}
+  else{r.status='loss';r.pnl=-r.risk;PS.loss++;PS.pnl-=r.risk;PS.oRisk-=r.risk;}
+  pRenderSigs(); pStats();
+}
+function pRenderSigs(){
+  var b=document.getElementById('p_tb');
+  if(!PS.sigs.length){b.innerHTML='<tr><td colspan="7"><div class="es"><div>--</div>Henüz sinyal yok</div></td></tr>';document.getElementById('p_sb').textContent='0 kayıt';return;}
+  document.getElementById('p_sb').textContent=PS.sigs.length+' kayıt';
+  b.innerHTML=PS.sigs.slice(0,60).map(function(r){
+    var tc=r.st==='dengeli'?'td':r.st==='underdog'?'tu':'ts';
+    var sc=r.oc==='YES'?'sy':'sn';
+    var stC=r.status==='open'?'var(--yellow)':r.status==='win'?'var(--green)':'var(--red)';
+    var stL=r.status==='open'?'AÇIK':r.status==='win'?'KAZANDI':'KAYBETTİ';
+    var pstr=r.status==='open'?'—':(r.pnl>=0?'+$'+r.pnl.toFixed(2):'-$'+Math.abs(r.pnl).toFixed(2));
+    var dry=r.dry?'<span style="font-size:8px;color:var(--yellow)">[K]</span> ':'';
+    var btns=r.status!=='open'?('<span class="'+(r.pnl>=0?'wn':'ls')+'" style="font-size:10px">'+pstr+'</span>'):('<div style="display:flex;gap:3px;margin-top:2px"><button onclick="pMark('+r.id+',\'win\')" style="font-size:8px;padding:1px 5px;background:rgba(0,255,136,.15);border:1px solid var(--green);color:var(--green);border-radius:2px;cursor:pointer">W</button><button onclick="pMark('+r.id+',\'loss\')" style="font-size:8px;padding:1px 5px;background:rgba(255,68,102,.15);border:1px solid var(--red);color:var(--red);border-radius:2px;cursor:pointer">L</button></div>');
+    return '<tr><td style="color:var(--muted)">'+r.time+'</td><td><div class="mn">'+dry+r.market+'</div><div style="font-size:9px;color:var(--muted)">'+r.ed+'</div></td><td><span class="stag '+tc+'">'+r.st+'</span></td><td class="'+sc+'">BUY '+r.oc+'</td><td>'+r.price.toFixed(3)+'</td><td>$'+r.risk.toFixed(2)+'</td><td><span style="color:'+stC+';font-size:9px;font-weight:700">'+stL+'</span>'+btns+'</td></tr>';
+  }).join('');
+}
+function pStats(){
+  var cl=PS.wins+PS.loss;
+  document.getElementById('p_ts').textContent=PS.sigs.length;
+  document.getElementById('p_tw').textContent=PS.wins;
+  document.getElementById('p_tl').textContent=PS.loss;
+  document.getElementById('p_op').textContent=PS.sigs.filter(function(s){return s.status==='open';}).length;
+  document.getElementById('p_or').textContent='Risk: $'+Math.max(0,PS.oRisk).toFixed(2);
+  document.getElementById('p_wr').textContent=cl?'Başarı: '+(PS.wins/cl*100).toFixed(0)+'%':'Başarı: —';
+  document.getElementById('p_lr').textContent=cl?'Kayıp: '+(PS.loss/cl*100).toFixed(0)+'%':'Kayıp: —';
+  var pnl=PS.pnl;
+  var pe=document.getElementById('p_pnl');
+  pe.textContent=(pnl>=0?'+$':'-$')+Math.abs(pnl).toFixed(2);
+  pe.className='cv '+(pnl>0?'g':pnl<0?'r':'');
+  var mx=PS.cfg.max;
+  document.getElementById('p_rf').style.width=Math.min(100,(PS.oRisk/mx)*100)+'%';
+  document.getElementById('p_rl').textContent='$'+PS.oRisk.toFixed(2)+' / $'+mx;
+  var pp=Math.min(100,Math.max(0,50+(pnl/mx)*50));
+  document.getElementById('p_pb').style.width=pp+'%';
+  document.getElementById('p_pb').style.background=pnl>=0?'var(--green)':'var(--red)';
+  document.getElementById('p_sc').textContent=PS.sc;
+}
+async function pScan(){
+  if(!PS.run) return;
+  lg('pLog','Tarama başlıyor...','i');
+  var mkts;
+  try{mkts=await pFetch();lg('pLog',mkts.length+' piyasa getirildi.','i');}
+  catch(e){lg('pLog','Hata: '+e.message,'e');return;}
+  PS.sc++; document.getElementById('p_ls').textContent='Son: '+ts();
+  var found=0;
+  for(var i=0;i<mkts.length;i++){
+    var m=mkts[i]; var p=pParse(m);
+    if(!p||!pFilter(m,p)) continue;
+    var sig=pStrat(m,p); if(!sig) continue;
+    var nm=m.question||'';
+    if(PS.sigs.find(function(s){return s.market===nm&&s.status==='open';})) continue;
+    found++;
+    lg('pLog','SİNYAL: '+nm.substring(0,45)+' >> '+sig.r,'s');
+    var rec=pAddSig(m,sig,p);
+    lg('pLog',(PS.dry?'[KURU] ':'[CANLI] ')+'BUY '+sig.oc+' @ '+sig.price.toFixed(3)+' | $'+rec.risk.toFixed(2),'o');
+    if(!PS.dry && rec.tk){
+      try{
+        var or=await fetch(PROXY+'/place_order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token_id:rec.tk,price:rec.price,size:rec.size,side:'BUY'})});
+        var od=await or.json();
+        if(od.success) lg('pLog','EMİR ONAYLANDI','o');
+        else lg('pLog','EMİR HATASI: '+od.error,'e');
+      }catch(e){lg('pLog','Emir gönderilemedi: '+e.message,'e');}
+    }
+  }
+  lg('pLog','Tarama tamamlandı: '+found+' yeni sinyal.','i');
+}
+function pStartScan(){
+  if(PS.tmr) clearInterval(PS.tmr);
+  PS.run=true;
+  lg('pLog','Bot başlatıldı. Mod: '+(PS.dry?'KURU':'CANLI'),'w');
+  pScan(); PS.tmr=setInterval(pScan,60000);
+}
+function pClear(){
+  if(!confirm('Tüm veriler silinsin mi?')) return;
+  if(PS.tmr) clearInterval(PS.tmr);
+  PS.run=false; PS.sigs=[]; PS.sc=0; PS.oRisk=0; PS.wins=0; PS.loss=0; PS.pnl=0;
+  pRenderSigs(); pStats();
+  document.getElementById('sDot').className='dot off';
+  document.getElementById('sTxt').textContent='DURDURULDU';
+  lg('pLog','Sıfırlandı.','w');
+}
+
+// ================================================================
+// TAB 2: BTC 5DK
+// ================================================================
+var BS={run:false,dry:true,tmr:null,cdTmr:null,chartTmr:null,syncTmr:null,bet:2.5,maxPrice:0.50,trades:[],wins:0,loss:0,pnl:0,lastMid:null,pnlHistory:[],totalWon:0,lastCandles:[],lastCandles1m:[]};
+// LocalStorage'dan geçmiş işlemleri yükle
+(function(){
+  try{
+    var saved=JSON.parse(localStorage.getItem('polybot_trades')||'[]');
+    var beforeCount=saved.length;
+    saved=saved.filter(function(t){
+      if(t.status==='open' && !t.dry) return false; // açık gerçek işlemler temizle
+      if(t.status==='loss') return true; // loss gerçek, kalsın
+      if(t.dry) return true; // demo kalsın
+      if(t.status==='win' && (parseFloat(t.pnl)||0)>0) return true; // gerçek win kalsın
+      if(t.status==='win' && (parseFloat(t.pnl)||0)===0) return false; // sahte win sil
+      return true;
+    });
+    var removed=beforeCount-saved.length;
+    if(removed>0) console.log('[BTC5] '+removed+' sahte kayıt temizlendi');
+    saved.forEach(function(t){
+      if(!t.date && t.dateISO) t.date=new Date(t.dateISO).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'});
+      if(!t.date) t.date=new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'});
+    });
+    localStorage.setItem('polybot_trades',JSON.stringify(saved));
+    BS.trades=saved;
+    saved.forEach(function(t){
+      if(t.status==='win'){BS.wins++;BS.pnl+=t.pnl;}
+      else if(t.status==='loss'){BS.loss++;BS.pnl+=t.pnl;}
+    });
+    BS.pnlHistory=saved.filter(function(t){return t.status!=='open';}).map(function(t,i){
+      var cum=0; for(var j=0;j<=i;j++) cum+=saved.filter(function(x){return x.status!=='open';})[j].pnl||0;
+      return {t:t.time,v:cum};
+    });
+    var openTrade=saved.find(function(t){return t.status==='open';});
+    if(openTrade){
+      setTimeout(function(){
+        lg('bLog','⚠️ Açık işlem bulundu: '+openTrade.market.substring(0,30)+' — izleme devam ediyor...','w');
+        tg_notify_resume(openTrade);
+        bCheckResult(openTrade);
+      }, 3000);
+    }
+  }catch(e){}
+})();
+var BS_FILTER='today'; // today, week, all
+var BS_TYPE_FILTER='all'; // all, win, loss
+// Sayfa açılışında son kullanılan moda göre filtre — varsayılan: gerçek
+var BS_MODE_FILTER=(function(){
+  try{
+    var mod=localStorage.getItem('polybot_last_mode_btc5')||'real';
+    return mod==='demo'?'demo':'real';
+  }catch(e){return 'real';}
+})();
+var B15_MODE_FILTER=(function(){
+  try{
+    var mod=localStorage.getItem('polybot_last_mode_btc15')||'real';
+    return mod==='demo'?'demo':'real';
+  }catch(e){return 'real';}
+})();
+
+function bFilteredTrades(){
+  var now=new Date(), trades=BS.trades;
+  // Tarih filtresi
+  if(BS_FILTER==='today'){
+    var today=now.toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'});
+    trades=trades.filter(function(t){
+      if(t.date) return t.date===today;
+      if(t.dateISO) return new Date(t.dateISO).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'})===today;
+      return true;
+    });
+  } else if(BS_FILTER==='week'){
+    var weekAgo=new Date(now-7*24*3600*1000);
+    trades=trades.filter(function(t){
+      if(t.dateISO) return new Date(t.dateISO)>=weekAgo;
+      return true;
+    });
+  }
+  // Tür filtresi
+  if(BS_TYPE_FILTER==='win') trades=trades.filter(function(t){return t.status==='win';});
+  else if(BS_TYPE_FILTER==='loss') trades=trades.filter(function(t){return t.status==='loss';});
+  // Demo/Gerçek filtresi
+  if(BS_MODE_FILTER==='real') trades=trades.filter(function(t){return !t.dry;});
+  else if(BS_MODE_FILTER==='demo') trades=trades.filter(function(t){return !!t.dry;});
+  return trades;
+}
+
+function _setBtnActive(prefix, active){
+  var btns=document.querySelectorAll('[id^="'+prefix+'"]');
+  btns.forEach(function(b){
+    if(b.id===active){b.style.background='var(--accent)';b.style.color='var(--bg)';b.style.borderColor='var(--accent)';}
+    else{b.style.background='transparent';b.style.color='var(--muted)';b.style.borderColor='var(--border)';}
+  });
+}
+
+function setBTypeFilter(f){
+  BS_TYPE_FILTER=f;
+  _setBtnActive('flt_type_','flt_type_'+f);
+  bRender(); bStats(); updatePnlChart();
+}
+function setBModeFilter(f){
+  BS_MODE_FILTER=f;
+  _setBtnActive('flt_mode_','flt_mode_'+f);
+  bRender(); bStats(); updatePnlChart();
+}
+var bChart=null, bChart5m=null, pnlChart=null;
+var candles1m=[];
+
+// FVG Custom Plugin
+var fvgPlugin={
+  id:'fvgPlugin',
+  afterDraw:function(chart){
+    if(!chart._fvgData || !chart._fvgData.length) return;
+    var ctx2=chart.ctx;
+    var xAxis=chart.scales.x;
+    var yAxis=chart.scales.y;
+    var ds=chart.data&&chart.data.datasets&&chart.data.datasets[0];
+    var candles=ds?ds.data:[];
+    if(!candles||candles.length<3) return;
+    var barW=30;
+    if(candles.length>=2){
+      var px0=xAxis.getPixelForValue(candles[0].x);
+      var px1=xAxis.getPixelForValue(candles[1].x);
+      barW=Math.abs(px1-px0);
+    }
+    chart._fvgData.forEach(function(f){
+      try{
+        var idxStart=Math.max(0, f.idx-2);
+        if(idxStart>=candles.length) return;
+        var idxEnd=Math.min(f.idx, candles.length-1);
+        var x0=xAxis.getPixelForValue(candles[idxStart].x)-barW*0.4;
+        var x1=xAxis.getPixelForValue(candles[idxEnd].x)+barW*0.6;
+        // Y ekseninde: top=yüksek fiyat → küçük pixel, bottom=düşük fiyat → büyük pixel
+        var yTop=yAxis.getPixelForValue(f.top);    // canvas'ta yukarıda (küçük sayı)
+        var yBot=yAxis.getPixelForValue(f.bottom); // canvas'ta aşağıda (büyük sayı)
+        if(yBot<=yTop) return; // geçersiz
+        var isBull=f.type==='bullish';
+        ctx2.save();
+        ctx2.fillStyle=isBull?'rgba(0,255,136,0.12)':'rgba(255,68,102,0.12)';
+        ctx2.strokeStyle=isBull?'rgba(0,255,136,0.55)':'rgba(255,68,102,0.55)';
+        ctx2.lineWidth=1;
+        ctx2.setLineDash([4,3]);
+        ctx2.fillRect(x0, yTop, x1-x0, yBot-yTop);
+        ctx2.strokeRect(x0, yTop, x1-x0, yBot-yTop);
+        ctx2.setLineDash([]);
+        ctx2.fillStyle=isBull?'rgba(0,255,136,0.9)':'rgba(255,68,102,0.9)';
+        ctx2.font='bold 9px monospace';
+        ctx2.fillText(isBull?'▲FVG':'▼FVG', x0+4, isBull?yBot-4:yTop+10);
+        ctx2.restore();
+      }catch(e){}
+    });
+  }
+};
+
+function initCharts(){
+
+  // 5dk Mum grafik (ayrı canvas)
+  var ctx5=document.getElementById('btcChart5m').getContext('2d');
+  bChart5m=new Chart(ctx5,{
+    type:'candlestick',
+    data:{datasets:[
+      {label:'BTC 5dk',data:[],color:{up:'#00ff88',down:'#ff4466',unchanged:'#4a6070'},borderColor:{up:'#00cc66',down:'#cc2244',unchanged:'#4a6070'}},
+    ]},
+    options:{responsive:true,animation:false,
+      plugins:{legend:{labels:{color:'#4a6070',font:{size:10}}}},
+      scales:{
+        x:{type:'time',time:{unit:'minute',displayFormats:{minute:'HH:mm'}},adapters:{date:{locale:'tr'}},ticks:{color:'#4a6070',font:{size:9},maxTicksLimit:8,source:'auto'},grid:{color:'rgba(30,45,61,.5)'}},
+        y:{position:'right',ticks:{color:'#4a6070',font:{size:9}},grid:{color:'rgba(30,45,61,.5)'}}
+      }
+    }
+  });
+
+  // 1dk Mum grafik (FVG overlay)
+  var ctx=document.getElementById('btcChart').getContext('2d');
+  bChart=new Chart(ctx,{
+    plugins:[fvgPlugin],
+    type:'candlestick',
+    data:{datasets:[
+      {label:'BTC 1dk',data:[],color:{up:'#00ff88',down:'#ff4466',unchanged:'#4a6070'},borderColor:{up:'#00cc66',down:'#cc2244',unchanged:'#4a6070'}},
+    ]},
+    options:{responsive:true,animation:false,
+      plugins:{legend:{labels:{color:'#4a6070',font:{size:10}}}},
+      scales:{
+        x:{type:'time',time:{unit:'minute',displayFormats:{minute:'HH:mm'}},adapters:{date:{locale:'tr'}},ticks:{color:'#4a6070',font:{size:9},maxTicksLimit:12,source:'auto'},grid:{color:'rgba(30,45,61,.5)'}},
+        y:{position:'right',ticks:{color:'#4a6070',font:{size:9}},grid:{color:'rgba(30,45,61,.5)'}}
+      }
+    }
+  });
+
+  // P&L grafik
+  var ctx2=document.getElementById('pnlChart').getContext('2d');
+  pnlChart=new Chart(ctx2,{
+    type:'line',
+    data:{labels:[],datasets:[{
+      label:'Kümülatif P&L ($)',data:[],
+      borderColor:'#00d4ff',backgroundColor:function(ctx){
+        var g=ctx.chart.ctx.createLinearGradient(0,0,0,200);
+        g.addColorStop(0,'rgba(0,212,255,0.3)');
+        g.addColorStop(1,'rgba(0,212,255,0)');
+        return g;
+      },
+      borderWidth:2,pointRadius:3,pointBackgroundColor:'#00d4ff',tension:0.4,fill:true
+    }]},
+    options:{responsive:true,animation:false,
+      plugins:{legend:{labels:{color:'#4a6070',font:{size:10}}}},
+      scales:{
+        x:{ticks:{color:'#4a6070',font:{size:9}},grid:{color:'rgba(30,45,61,.5)'}},
+        y:{position:'right',ticks:{color:'#4a6070',font:{size:9}},grid:{color:'rgba(30,45,61,.5)'},
+           suggestedMin:-5,suggestedMax:5}
+      }
+    }
+  });
+}
+
+// FVG Tespiti
+// Bullish FVG: mum[i-2].high < mum[i].low → boşluk yukarı → UP
+// Bearish FVG: mum[i-2].low > mum[i].high → boşluk aşağı → DOWN
+function detectFVG(candles){
+  var results=[];
+  for(var i=2;i<candles.length;i++){
+    var c1=candles[i-2], c2=candles[i-1], c3=candles[i];
+    if(c1.high < c3.low){
+      var gap=c3.low-c1.high;
+      if(gap>0) results.push({type:'bullish',top:c3.low,bottom:c1.high,mid:(c3.low+c1.high)/2,idx:i,pct:gap/c1.high*100});
+    }
+    if(c1.low > c3.high){
+      var gap2=c1.low-c3.high;
+      if(gap2>0) results.push({type:'bearish',top:c1.low,bottom:c3.high,mid:(c1.low+c3.high)/2,idx:i,pct:gap2/c1.low*100});
+    }
+  }
+  return results;
+}
+
+// Sadece aktif slot penceresindeki mumlardan FVG tespit et
+// slotSec: pencere uzunluğu saniye cinsinden (300=5dk, 900=15dk)
+function detectFVGInSlot(candles, slotSec){
+  if(!candles||candles.length<3) return [];
+  var now=Math.floor(Date.now()/1000);
+  var slotStart=Math.floor(now/slotSec)*slotSec;
+  var slotStartMs=slotStart*1000;
+  // Slot içindeki mumlar (bir önceki pencereden son mumu da al — ilk FVG için)
+  var inSlot=candles.filter(function(c){return c.time>=slotStartMs;});
+  // Önceki pencereden son mum
+  var prevLast=null;
+  for(var i=candles.length-1;i>=0;i--){
+    if(candles[i].time<slotStartMs){prevLast=candles[i];break;}
+  }
+  var base=prevLast?[prevLast].concat(inSlot):inSlot;
+  if(base.length<3) return [];
+  // detectFVG çalıştır, idx'leri grafik array'ine göre düzelt
+  var raw=detectFVG(base);
+  return raw.map(function(f){
+    // base[f.idx] → bu mumun time'ını bul, grafik datasında eşleştir
+    var mc=base[f.idx];
+    if(!mc) return null;
+    var gi=candles.findIndex(function(c){return c.time===mc.time;});
+    if(gi<0) return null;
+    return {type:f.type,top:f.top,bottom:f.bottom,idx:gi,pct:f.pct};
+  }).filter(Boolean);
+}
+
+// FVG ihlal (mitigation) kontrolü
+// Bir FVG kesinleştikten sonra sonraki mumlardan biri boşluğu doldurursa → iptal
+// Bullish FVG: mum.low <= fvg.bottom  (alt sınırı kırdı)
+// Bearish FVG: mum.high >= fvg.top    (üst sınırı kırdı)
+function isFVGMitigated(fvg, candles){
+  // fvg.idx: FVG'nin 3. mumunun (c3) index'i
+  // Sonraki mumlar: idx+1'den itibaren
+  var afterCandles = candles.slice(fvg.idx + 1);
+  for(var i=0; i<afterCandles.length; i++){
+    var c = afterCandles[i];
+    if(fvg.type === 'bullish'){
+      // Herhangi bir mum gövde/gölgesi FVG'nin alt sınırına (bottom) ulaştıysa ihlal
+      if(c.low <= fvg.bottom) return true;
+    } else {
+      // Bearish: herhangi bir mum üst sınıra (top) ulaştıysa ihlal
+      if(c.high >= fvg.top) return true;
+    }
+  }
+  return false;
+}
+
+// Son N mumda geçerli (ihlal edilmemiş) FVG var mı?
+function getLatestFVG(candles, lookback){
+  if(!candles||candles.length<3) return null;
+  var check=candles.slice(-(lookback||candles.length));
+  var fvgs=detectFVG(check);
+  if(!fvgs.length) return null;
+  // En yeni FVG'den geriye git, ihlal edilmemiş ilkini döndür
+  for(var i=fvgs.length-1; i>=0; i--){
+    if(!isFVGMitigated(fvgs[i], check)) return fvgs[i];
+  }
+  return null; // hepsi ihlal edilmiş
+}
+
+
+function fetchTimeout(url, ms, opts){
+  var controller = new AbortController();
+  var timer = setTimeout(function(){ controller.abort(); }, ms||5000);
+  return fetch(url, Object.assign({signal: controller.signal}, opts||{}))
+    .finally(function(){ clearTimeout(timer); });
+}
+
+
+
+
+function bCD(sec){
+  if(BS.cdTmr) clearInterval(BS.cdTmr);
+  var r=sec;
+  document.getElementById('b_ns').textContent=r+'s';
+  BS.cdTmr=setInterval(function(){
+    r--;
+    document.getElementById('b_ns').textContent=r>0?r+'s':'...';
+    if(r<=0) clearInterval(BS.cdTmr);
+  },1000);
+}
+
+// Telegram — sayfa yeniden yüklenince açık işlem bildirimi (devre dışı - sadece match onayında bildir)
+function tg_notify_resume(trade){ /* devre dışı */ }
+
+
+function bAutoMark(trade, winnerStr){
+  var won = winnerStr.toUpperCase() === trade.dir;
+  trade.status = won ? 'win' : 'loss';
+  trade._redeemTried = true;
+  if(won){
+    trade.pnl = 0; // gerçek PnL redeem'den gelecek
+    BS.wins++;
+    lg('bLog','✅ OTOMATİK WIN: '+trade.dir+' vs '+winnerStr.toUpperCase()+' (redeem bekleniyor)','o');
+  } else {
+    trade.pnl = -trade.bet;
+    BS.loss++; BS.pnl += trade.pnl;
+    lg('bLog','❌ OTOMATİK LOSS: '+trade.dir+' vs '+winnerStr.toUpperCase()+' | -$'+trade.bet.toFixed(2),'e');
+  }
+  BS.pnlHistory.push({t:ts(), v:BS.pnl});
+  try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+  bRender(); bStats(); updatePnlChart();
+  fetch(PROXY+'/cancel_all_orders',{method:'POST'}).catch(function(){});
+  if(!trade.dry) fetch(PROXY+'/notify_trade',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({direction:trade.dir,price:trade.price,bet:trade.bet,status:trade.status,pnl:trade.pnl,market:trade.market,bot:'BTC5'})}).catch(function(){});
+  if(won && !trade.dry && trade.mid){
+    fetch(PROXY+'/redeem_market?market_id='+trade.mid,{method:'POST'})
+      .then(function(r){return r.json();})
+      .then(function(rd){
+        if(rd.redeemed>0) lg('bLog','✅ REDEEM OK: '+(rd.txhash||'').substring(0,16)+'...','o');
+        else { lg('bLog','Redeem bulunamadı — genel redeem deneniyor','w'); fetch(PROXY+'/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); }
+        setTimeout(fetchBalance,4000); setTimeout(fetchBalance,15000); setTimeout(fetchBalance,30000);
+      }).catch(function(e){lg('bLog','Redeem hata: '+e.message,'e');});
+  } else {
+    setTimeout(fetchBalance,3000);
+  }
+}
+
+async function bScan(){
+  if(!BS.run) return;
+  var sec=Math.round((BS.interval||15000)/1000);
+  bCD(sec);
+  lg('bLog','--- BTC Tarama ---','i');
+  try{ await _bScan(); }catch(e){ lg('bLog','TARAMA HATA: '+e.message,'e'); }
+}
+async function _bScan(){
+  // 0. Açık işlem varsa sinyal aramayı atla — bCheckResult hallediyor
+  var openTrade=BS.trades.find(function(t){return t.status==='open';});
+  if(openTrade){
+    // EndDate çok geçmişse (10dk+) trade takılı kalmış — zorla sil, yeni işlem açılsın
+    var _endTs=0;
+    try{ var _ep=new Date(openTrade.endDate||''); if(!isNaN(_ep)) _endTs=_ep.getTime(); }catch(e){}
+    // endDate geçtiyse hemen polySync tetikle — bCheckResult'tan bağımsız
+    if(_endTs>0 && Date.now() > _endTs){
+      // Her taramada polySync çağırma — sadece endDate sonrası ilk 3dk
+      var _sinceEnd = Date.now() - _endTs;
+      if(_sinceEnd < 3*60*1000){
+        // endDate geçeli 3dk'dan az — her taramada polySync zorla
+        lg('bLog','⏳ EndDate geçti ('+Math.round(_sinceEnd/1000)+'sn) — Poly Sync tetikleniyor...','i');
+        polySync();
+      } else {
+        // 3dk geçti hâlâ takılı — zorla temizle
+        lg('bLog','⚠️ Açık trade 3dk+ süresi dolmuş — zorla temizleniyor.','w');
+        BS.trades=BS.trades.filter(function(x){return x.id!==openTrade.id;});
+        BS.lastMid=null;
+        try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+        bRender(); bStats();
+        setTimeout(polySync, 1000);
+      }
+      return;
+    } else {
+      return;
+    }
+  }
+
+  // 0b. Cancel sonrası cooldown — aynı markete çift emir engeli
+  if(BS._cancelledUntil && Date.now() < BS._cancelledUntil){
+    var secLeft=Math.ceil((BS._cancelledUntil-Date.now())/1000);
+    lg('bLog','⏳ Cancel cooldown: '+secLeft+'sn bekleniyor (çift emir engeli)','w');
+    return;
+  }
+
+  // 0c. Yeni 5dk penceresi başladıysa token ID'leri sıfırla — yeni market
+  var _curSlot=Math.floor(Date.now()/1000/300)*300;
+  if(BS._lastSlot && BS._lastSlot !== _curSlot){
+    _liveTokens.up=''; _liveTokens.down='';
+    BS._liveUp=0; BS._liveDn=0;
+  }
+  BS._lastSlot=_curSlot;
+
+  // 1. Mumlar
+  var candles=[];
+  candles1m=[];
+  try{
+    var results=await Promise.all([
+      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=12').then(function(r){return r.json();}).then(function(d){return d.map(function(c){return {time:parseInt(c[0]),open:parseFloat(c[1]),high:parseFloat(c[2]),low:parseFloat(c[3]),close:parseFloat(c[4]),volume:parseFloat(c[5])};});}),
+      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=30').then(function(r){return r.json();}).then(function(d){return d.map(function(c){return {time:parseInt(c[0]),open:parseFloat(c[1]),high:parseFloat(c[2]),low:parseFloat(c[3]),close:parseFloat(c[4]),volume:parseFloat(c[5])};});})
+    ]);
+    candles=results[0]; candles1m=results[1];
+    BS.lastCandles=candles; BS.lastCandles1m=candles1m;
+    lg('bLog',candles.length+' 5dk, '+candles1m.length+' 1dk mum getirildi.','i');
+  }catch(e){lg('bLog','Binance hatası: '+e.message,'e');return;}
+
+  var cls=candles.map(function(c){return c.close;}); // 5dk (grafik)
+  var cls1m=candles1m.map(function(c){return c.close;}); // 1dk (sinyal)
+  var last=cls[cls.length-1], prev=cls[cls.length-2]||last;
+  var chg=((last-prev)/prev*100).toFixed(2);
+  // UI
+  document.getElementById('b_pr').textContent='$'+last.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('b_pr').className='cv '+(last>=prev?'g':'r');
+  document.getElementById('b_pc').textContent=(last>=prev?'+':'')+chg+'%';
+  lg('bLog','BTC=$'+last.toFixed(0)+' ('+chg+'%)','i');
+
+  // Grafik güncelle
+  if(bChart){
+    bChart.data.datasets[0].data=candles1m.map(function(c){return {x:c.time,o:c.open,h:c.high,l:c.low,c:c.close};});
+    // Son 20 1dk mumda kesinleşmiş ve ihlal edilmemiş tüm FVG'leri grafikte göster
+    var _c1m = candles1m.slice();
+    // Açık mumu ihlal kontrolüne dahil et
+    var _nowMs = Date.now();
+    var _openC = null;
+    if(_c1m.length>0 && _nowMs < _c1m[_c1m.length-1].time+60000){
+      _openC = _c1m[_c1m.length-1];
+      _c1m = _c1m.slice(0,-1);
+    }
+    var _withOpen = _openC ? _c1m.concat([_openC]) : _c1m;
+    var _allFVGs = detectFVG(_c1m);
+    // İhlal edilmemiş olanları filtrele
+    var _validFVGs = _allFVGs.filter(function(f){ return !isFVGMitigated(f, _withOpen); });
+    bChart._fvgData = _validFVGs;
+    bChart.update();
+  }
+  if(bChart5m){
+    var cd5=candles.slice(-3).map(function(d){return {x:d.time,o:d.open,h:d.high,l:d.low,c:d.close};});
+    bChart5m.data.datasets[0].data=cd5;
+    bChart5m.update();
+  }
+
+  // 2. Piyasa
+  var ts2=Math.floor(Date.now()/1000);
+  var slot=Math.floor(ts2/300)*300;
+  var mdata=null;
+  var slots=[slot,slot-300,slot+300,slot-600,slot+600];
+  for(var i=0;i<slots.length;i++){
+    try{
+      var mr=await fetchTimeout(PROXY+'/btc_market?slot='+slots[i], 5000);
+      var md=await mr.json();
+      lg('bLog','Slot '+slots[i]+': '+(md&&md.market?'BULUNDU':'yok'),'i');
+      if(md&&md.market){mdata=md;break;}
+    }catch(e){lg('bLog','Slot '+slots[i]+' HATA: '+(e.name==='AbortError'?'timeout':e.message),'e');}
+  }
+  if(!mdata||!mdata.market){lg('bLog','Aktif BTC 5dk piyasası bulunamadı — FVG hesaplandı ama emir açılmadı.','w');}
+  var m=mdata?mdata.market:null;
+  var mid=m?m.id||'':'';
+  var up=m?parseFloat(m.up_price||0.5):0.5;
+  var dn=m?parseFloat(m.down_price||0.5):0.5;
+  if(m){
+    document.getElementById('b_mt').textContent=(m.title||'').substring(0,48);
+    document.getElementById('b_me').textContent=m.endDate||'?';
+    document.getElementById('b_up').textContent='UP '+(up*100).toFixed(1)+'¢';
+    document.getElementById('b_dn').textContent='DOWN '+(dn*100).toFixed(1)+'¢';
+    document.getElementById('b_ub').style.width=(up*100)+'%';
+    document.getElementById('b_db').style.width=(dn*100)+'%';
+    lg('bLog','Piyasa: '+(m.title||'').substring(0,40),'i');
+    lg('bLog','UP='+(up*100).toFixed(1)+'% DOWN='+(dn*100).toFixed(1)+'%','i');
+    // Canlı fiyat ticker için token ID'leri kaydet
+    // Market değiştiyse önce eski token/fiyatları sıfırla
+    if(_liveTokens.up && _liveTokens.up !== m.up_token){
+      _liveTokens.up=''; _liveTokens.down='';
+      BS._liveUp=0; BS._liveDn=0;
+      lg('bLog','↻ Yeni market — canlı token sıfırlandı.','i');
+    }
+    if(m.up_token) _liveTokens.up=m.up_token;
+    if(m.down_token) _liveTokens.down=m.down_token;
+  }
+
+  // 3. FVG - Son 30 1dk mumda EN SON kesinleşmiş + ihlal edilmemiş FVG'yi bul
+  // Kural: En son oluşmuş, hâlâ ihlal edilmemiş FVG sinyaldir.
+  // Ondan önce/sonra ihlal edilmiş FVG'ler önemsiz — sadece bu FVG geçerli.
+  var allCandles1m = candles1m.slice();
+  // Açık mumu tespiten çıkar, ihlal kontrolüne dahil et
+  var nowMs = Date.now();
+  var openCandle = null;
+  if(allCandles1m.length > 0){
+    var lastC = allCandles1m[allCandles1m.length-1];
+    if(nowMs < lastC.time + 60000){
+      openCandle = allCandles1m[allCandles1m.length-1];
+      allCandles1m = allCandles1m.slice(0,-1);
+    }
+  }
+  var fvgCandlesWithOpen = openCandle ? allCandles1m.concat([openCandle]) : allCandles1m;
+
+  // Mevcut 5dk penceresi bilgisi (log için)
+  var slotStart5m = Math.floor(Date.now()/1000/300)*300*1000;
+  var inSlot = allCandles1m.filter(function(c){ return c.time >= slotStart5m; });
+  lg('bLog','5dk pencere: '+new Date(slotStart5m).toLocaleTimeString('tr-TR')+' | '+inSlot.length+' kapanmış mum'+(openCandle?' + 1 açık':''),'i');
+
+  // Tüm kapanmış mumlardan FVG listesi
+  var allFVGs = allCandles1m.length >= 3 ? detectFVG(allCandles1m) : [];
+  lg('bLog','FVG tarama: '+allCandles1m.length+' mum (30 1dk) → '+allFVGs.length+' FVG bulundu','i');
+
+  // En yeni FVG'den başla, ihlal edilmemiş ilkini bul — bu tek geçerli sinyal
+  var fvg = null;
+  for(var fi=allFVGs.length-1; fi>=0; fi--){
+    if(!isFVGMitigated(allFVGs[fi], fvgCandlesWithOpen)){
+      fvg = allFVGs[fi];
+      break; // Bulundu — diğer FVG'lere bakma
+    }
+    // İhlal edilmiş FVG'leri loglamıyoruz — önemsiz
+  }
+
+  var tDir=null;
+  if(fvg){
+    var fvgAge = allCandles1m.length - 1 - fvg.idx;
+    var fvgInSlot = allCandles1m[fvg.idx] && allCandles1m[fvg.idx].time >= slotStart5m;
+    var fvgLabel = fvgInSlot ? 'MEVCUT PENCERE' : fvgAge+' mum önce (önceki pencere)';
+    lg('bLog','✅ Geçerli FVG: '+fvg.type.toUpperCase()+' | Gap='+(fvg.top-fvg.bottom).toFixed(1)+'$ | '+fvgLabel,'s');
+    tDir=fvg.type==='bullish'?'UP':'DOWN';
+    flashFVG(tDir);
+  } else {
+    lg('bLog','Geçerli FVG yok (hepsi ihlal edilmiş veya FVG oluşmadı) → sinyal yok.','i');
+    showFVGSignal(null,'fvg_signal_bar');
+    return;
+  }
+
+  // Piyasa bulunamadıysa emir açma ama FVG logu zaten yazıldı
+  if(!mdata||!mdata.market){return;}
+
+  if(mid&&mid===BS.lastMid){
+    // lastMid set ama trade kaydı var mı kontrol et
+    var midTrade=BS.trades.find(function(t){return t.mid===mid&&t.status==='open';});
+    if(midTrade){
+      lg('bLog','Bu piyasaya zaten girildi.','i');return;
+    } else {
+      lg('bLog','lastMid set ama trade kaydı yok — sıfırlanıyor.','w');
+      BS.lastMid=null;
+    }
+  }
+  var openTrades=BS.trades.filter(function(t){return t.status==='open';});
+  if(openTrades.length>0){lg('bLog','Açık işlem var, yeni emir açılmıyor: '+openTrades[0].market.substring(0,30),'w');return;}
+  if(!m.accepting_orders&&!m.acceptingOrders){lg('bLog','Piyasa emir kabul etmiyor.','w');return;}
+  // Market dengeli değilse girme — bir taraf 40%'dan düşükse piyasa uç noktada demek
+  if(up < (BS.minBalance||0.40) || dn < (BS.minBalance||0.40)){lg('bLog','Market dengesiz (UP='+(up*100).toFixed(0)+'¢ DOWN='+(dn*100).toFixed(0)+'¢) — geçildi.','w');return;}
+  // Poly fiyat kontrolü - FVG yönü ile Poly uyuşmalı
+  if(tDir==='UP' && up>BS.maxPrice){lg('bLog','FVG=UP ama Poly UP pahalı ('+( up*100).toFixed(1)+'%), geçildi.','w');return;}
+  if(tDir==='DOWN' && dn>BS.maxPrice){lg('bLog','FVG=DOWN ama Poly DOWN pahalı ('+(dn*100).toFixed(1)+'%), geçildi.','w');return;}
+  var dir=tDir;
+  var rawPrice=dir==='UP'?up:dn;
+  var bestAsk=dir==='UP'?(m.up_best_ask||null):(m.down_best_ask||null);
+  // Best ask maxPrice'dan yüksekse girme — gerçek alış fiyatı çok pahalı
+  if(bestAsk && bestAsk > 0.01 && bestAsk < 0.99 && bestAsk > BS.maxPrice){
+    lg('bLog','Ask fiyatı çok yüksek ('+(bestAsk*100).toFixed(1)+'% > max '+(BS.maxPrice*100).toFixed(0)+'%) — geçildi.','w');
+    return;
+  }
+  // Emir fiyatı: ask geçerliyse ask, yoksa mid — artık +2% yok (match hızlı)
+  // Canlı mid varsa onu kullan (daha güncel)
+  // liveMid sanity check — eski market token'ı ise mid ile çok farklı olur, reddet
+  var _rawLive = (dir==='UP') ? (BS._liveUp||0) : (BS._liveDn||0);
+  var _liveDiff = Math.abs(_rawLive - rawPrice);
+  var liveMid = (_rawLive > 0.01 && _rawLive < 0.99 && _liveDiff < 0.20)
+              ? _rawLive  // geçerli: max %20 fark
+              : rawPrice; // fallback: proxy'den gelen mid
+  var useAsk = (bestAsk && bestAsk > 0.01 && bestAsk < 0.99) ? bestAsk : null;
+  // Ask varsa ask fiyatından gir, yoksa canlı mid
+  var price = useAsk ? Math.min(BS.maxPrice, Math.round(useAsk*100)/100)
+                     : Math.min(BS.maxPrice, Math.round(liveMid*100)/100);
+  // CLOB min tick 0.01 — en az 0.01'e yuvarla
+  price = Math.max(0.01, Math.round(price*100)/100);
+  var askDisplay = useAsk ? (useAsk*100).toFixed(1)+'%' : '? (mid kullanılıyor)';
+  lg('bLog','Fiyat: mid='+(rawPrice*100).toFixed(1)+'% liveMid='+(liveMid*100).toFixed(1)+'% ask='+askDisplay+' → emir='+(price*100).toFixed(1)+'%','i');
+  var tokenId=dir==='UP'?(m.up_token||''):(m.down_token||'');
+  // Polymarket API min 5 kontrat şartı koyuyor
+  // Size = max(5, bet/price) — ama maliyet bahisi çok aşmasın
+  var size2=Math.max(5, Math.round(BS.bet/price));
+  var actualCost=(size2*price).toFixed(2);
+  lg('bLog','Size='+size2+' Maliyet=$'+actualCost,'i');
+  // Bakiye kontrolü: min 5 kontrat zorunlu olduğu için maliyet bahisten yüksek olabilir, max 2x kabul et
+  if(parseFloat(actualCost)>BS.bet*2){lg('bLog','Maliyet çok yüksek ($'+actualCost+' > $'+(BS.bet*2).toFixed(2)+'), bahisi artır veya fiyat bekle.','w');return;}
+
+  lg('bLog','SİNYAL: '+dir+' | FVG Gap='+fvg.pct.toFixed(3)+'% | Poly='+(price*100).toFixed(1)+'%','s');
+
+  // Emir gönder
+  var orderOk=false;
+  if(BS.dry){
+    lg('bLog','[DEMO] BUY '+dir+' @ '+price.toFixed(3)+' | $'+BS.bet,'o');
+    orderOk=true;
+  } else {
+    if(!tokenId){lg('bLog','Token ID eksik, emir gönderilemedi.','e');}
+    else {
+      try{
+        var or2=await fetch(PROXY+'/place_order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token_id:tokenId,price:price,size:size2,side:'BUY'})});
+        var od2=await or2.json();
+        if(od2.success){lg('bLog','[CANLI] EMİR GÖNDERİLDİ: BUY '+dir+' @ '+price.toFixed(3)+' | $'+BS.bet,'o');orderOk=true;fetchBalance();}
+        else{
+          lg('bLog','EMİR HATASI: '+od2.error,'e');
+          // Bakiye yetersizse botu otomatik durdur
+          if(od2.error&&(od2.error.indexOf('not enough balance')>=0||od2.error.indexOf('allowance')>=0)){
+            lg('bLog','🛑 BAKİYE YETERSİZ — Bot otomatik durduruluyor!','e');
+            bToggle(); // botu durdur
+          }
+        }
+      }catch(e){lg('bLog','Emir gönderilemedi: '+e.message,'e');}
+    }
+  }
+
+  if(orderOk){
+    // Emir anındaki bakiyeyi kaydet — match kontrolünde kullanılacak
+    var _curBalForTrade = 0;
+    try{
+      var _br=await fetch(PROXY+'/balance');
+      var _bd=await _br.json();
+      _curBalForTrade=parseFloat(_bd.proxy||0);
+    }catch(e){}
+    var trade={id:Date.now(),time:ts(),date:new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}),dateISO:new Date().toISOString(),market:(m.title||'').substring(0,38),dir:dir,price:price,bet:BS.bet,size:size2,status:'open',pnl:0,dry:BS.dry,mid:mid,endDate:m.endDate||'',_balanceBefore:_curBalForTrade};
+    BS.trades.unshift(trade);
+    BS.lastMid=mid;  // trade kaydedildikten sonra set et
+    try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+    bRender();
+
+    // 45sn sonra pozisyon gerçekten oluştu mu kontrol et
+    if(!BS.dry){
+      var potEl=document.getElementById('open_trade_potential');
+      if(potEl) potEl.innerHTML='<span style="color:var(--muted);font-size:10px">⏳ Match kontrol ediliyor (45sn)...</span>';
+      setTimeout(async function(){
+        var chk=BS.trades.find(function(x){return x.id===trade.id;});
+        if(!chk||chk.status!=='open') return;
+        try{
+          // KRİTİK: Önce bakiye kontrolü yap
+          // Polymarket pozisyon API'si 30-60sn gecikmeli — ama bakiye anında düşer
+          // Bakiye düştüyse emir match olmuş demektir — trade'i ASLA silme
+          var balBefore = trade._balanceBefore || 0;
+          var balNow = 0;
+          try{
+            var balR = await fetch(PROXY+'/balance');
+            var balD = await balR.json();
+            balNow = parseFloat(balD.proxy || 0);
+          }catch(be){}
+          var balDrop = balBefore > 0 ? (balBefore - balNow) : 0;
+          lg('bLog','Match kontrol: bakiye öncesi=$'+balBefore.toFixed(2)+' şimdi=$'+balNow.toFixed(2)+' fark=$'+balDrop.toFixed(2),'i');
+
+          // Bakiye bahis miktarı kadar düştüyse → emir kesinlikle match oldu
+          if(balDrop >= trade.bet * 0.8){
+            lg('bLog','✅ BAKİYE DÜŞTÜ ($'+balDrop.toFixed(2)+') — emir match oldu, trade korunuyor.','o');
+            var potEl2=document.getElementById('open_trade_potential');
+            if(potEl2) potEl2.innerHTML='<span style="color:var(--green);font-weight:700">✅ Match Oldu (bakiye)</span>'
+              +'&nbsp;&nbsp;<span style="color:var(--green)">+$'+((trade.size*(1-trade.price))-trade.bet).toFixed(2)+'</span>'
+              +'&nbsp;&nbsp;<span style="color:var(--red)">-$'+trade.bet.toFixed(2)+'</span>';
+            fetch(PROXY+'/notify_trade',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({direction:trade.dir,price:trade.price,bet:trade.bet,status:'open',pnl:0,market:trade.market,bot:'BTC5'})}).catch(function(){});
+            return; // Trade korunuyor
+          }
+
+          // Bakiye düşmemişse pozisyon API ile de kontrol et
+          var _mid1=trade.mid?'?market_id='+trade.mid:'';
+          var pr=await fetch(PROXY+'/check_positions'+_mid1);
+          var pd=await pr.json();
+          // Hata varsa emri SILME — güvende kal
+          if(pd.error){
+            lg('bLog','Pozisyon kontrol hatası — emir korunuyor.','w');
+            return;
+          }
+          var hasPos=(pd.proxy&&pd.proxy.total>0)||(pd.eoa&&pd.eoa.total>0);
+          var potEl2=document.getElementById('open_trade_potential');
+          if(!hasPos){
+            // Son kontrol: 10sn daha bekle
+            await new Promise(function(r){setTimeout(r,10000);});
+            // Bakiyeyi tekrar kontrol et
+            try{
+              var balR2=await fetch(PROXY+'/balance');
+              var balD2=await balR2.json();
+              var balNow2=parseFloat(balD2.proxy||0);
+              var balDrop2 = balBefore > 0 ? (balBefore - balNow2) : 0;
+              if(balDrop2 >= trade.bet * 0.8){
+                lg('bLog','✅ BAKİYE DÜŞTÜ (2. kontrol, $'+balDrop2.toFixed(2)+') — trade korunuyor.','o');
+                return;
+              }
+            }catch(be2){}
+            var pr2=await fetch(PROXY+'/check_positions'+_mid1);
+            var pd2=await pr2.json();
+            var hasPos2=(pd2.proxy&&pd2.proxy.total>0)||(pd2.eoa&&pd2.eoa.total>0);
+            if(!hasPos2){
+              lg('bLog','⚠️ Emir 45sn içinde match olmadı — ÖNCE iptal gönderiliyor...','w');
+              try{
+                await fetch(PROXY+'/cancel_all_orders',{method:'POST'});
+                lg('bLog','✅ CLOB emirleri iptal edildi.','i');
+              }catch(ce){ lg('bLog','Cancel hata (devam): '+ce.message,'w'); }
+              await new Promise(function(r){setTimeout(r,3000);});
+              BS.trades=BS.trades.filter(function(x){return x.id!==trade.id;});
+              BS.lastMid=null;
+              BS._cancelledMid=trade.mid;
+              BS._cancelledUntil=Date.now()+60000;
+              try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+              bRender(); bStats();
+              lg('bLog','⚠️ Trade silindi, yeni sinyal bekleniyor (60sn cooldown).','w');
+            } else {
+              lg('bLog','✅ Emir match oldu (pozisyon API).','i');
+            }
+          } else {
+            lg('bLog','✅ Emir match oldu — işlem aktif.','i');
+            if(potEl2) potEl2.innerHTML='<span style="color:var(--green);font-weight:700">✅ Match Oldu</span>'
+              +'&nbsp;&nbsp;<span style="color:var(--green)">+$'+((trade.size*(1-trade.price))-trade.bet).toFixed(2)+'</span>'
+              +'&nbsp;&nbsp;<span style="color:var(--red)">-$'+trade.bet.toFixed(2)+'</span>';
+            fetch(PROXY+'/notify_trade',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({direction:dir,price:price,bet:BS.bet,status:'open',pnl:0,market:trade.market,bot:'BTC5'})}).catch(function(){});
+          }
+        }catch(e){ lg('bLog','Pozisyon kontrol hata — emir korunuyor: '+e.message,'w'); }
+      }, 45000);
+    }
+
+    // BTC 5dk market genellikle kapanıştan 10-60sn içinde resolve oluyor
+    // endDate'e yakın olduğumuzda hemen başla, uzaksa endDate-10sn'de başla
+    var endTs=0;
+    try{ var ep=new Date(m.endDate||m.endDateIso||''); if(!isNaN(ep)) endTs=ep.getTime(); }catch(e){}
+    var now=Date.now();
+    var msEnd;
+    if(endTs>0){
+      var remaining=endTs-now;
+      if(remaining<=30000) msEnd=10000;       // 30sn'den az kaldı → 10sn sonra kontrol
+      else msEnd=Math.max(10000,remaining-15000); // endDate'den 15sn önce başla
+    } else {
+      msEnd=15000; // bilinmiyorsa 15sn sonra başla
+    }
+    if(msEnd>300000) msEnd=15000;
+    lg('bLog','Sonuç ilk kontrol ~'+Math.round(msEnd/1000)+'sn sonra. EndDate='+(m.endDate||'?'),'i');
+    setTimeout(function(){bCheckResult(trade);},msEnd);
+  }
+}
+
+async function bCheckResult(trade, retries){
+  retries=retries||0;
+  // Trade listede yoksa (match olmadı, iptal edildi) — döngüyü durdur
+  var live=BS.trades.find(function(x){return x.id===trade.id;});
+  if(!live){
+    lg('bLog','Sonuç kontrolü durduruldu — emir iptal edilmişti.','i');
+    return;
+  }
+  if(live.status!=='open'){
+    lg('bLog','Sonuç zaten işaretli ('+live.status+') — kontrol durdu.','i');
+    // Eğer win ise ve redeem henüz denenmemişse dene
+    if(live.status==='win' && !live.dry && live.mid && !live._redeemTried){
+      live._redeemTried=true;
+      lg('bLog','Manuel WIN → redeem deneniyor...','i');
+      fetch(PROXY+'/redeem_market?market_id='+live.mid,{method:'POST'})
+        .then(function(r){return r.json();})
+        .then(function(rd){
+          if(rd.redeemed>0) lg('bLog','✅ REDEEM OK: '+rd.txhash.substring(0,16)+'...','o');
+          else { lg('bLog','Redeem pozisyon bulunamadı — genel redeem deneniyor','w'); fetch(PROXY+'/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); }
+          setTimeout(fetchBalance,5000); setTimeout(fetchBalance,15000);
+        }).catch(function(e){lg('bLog','Redeem hata: '+e.message,'e');});
+    }
+    return;
+  }
+  lg('bLog','Sonuç kontrol ediliyor: '+trade.market.substring(0,30)+' (deneme '+(retries+1)+')','i');
+  if(!trade.mid){
+    if(retries<3){setTimeout(function(){bCheckResult(trade,retries+1);},15000);}
+    else{lg('bLog','Market ID yok, pozisyon manuel kontrol edin.','e');}
+    return;
+  }
+  // Max 20 deneme (~5 dakika) — sonrasında zorla kapat
+  if(retries>=20){
+    lg('bLog','⏰ Max retry — pozisyon kontrol ediliyor...','w');
+    try{
+      var _midRb=trade.mid?'?market_id='+trade.mid:'';
+        var posRb=await fetchTimeout(PROXY+'/check_positions'+_midRb,8000);
+      var posDv=await posRb.json();
+      var hasPosB=(posDv.proxy&&posDv.proxy.total>0)||(posDv.eoa&&posDv.eoa.total>0);
+      if(!hasPosB){
+        lg('bLog','⚠️ Pozisyon bulunamadı — match olmayan işlem silindi.','w');
+        BS.trades=BS.trades.filter(function(x){return x.id!==trade.id;});
+        try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+      } else {
+        lg('bLog','⏰ Pozisyon var ama resolve olmadı — loss işaretlendi.','e');
+        trade.status='loss'; trade.pnl=-trade.bet;
+        BS.loss++; BS.pnl+=trade.pnl;
+        try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+      }
+    }catch(e){
+      lg('bLog','⚠️ Pozisyon kontrol hatası — işlem silindi.','w');
+      BS.trades=BS.trades.filter(function(x){return x.id!==trade.id;});
+      try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e2){}
+    }
+    bRender(); bStats();
+    fetch(PROXY+'/cancel_all_orders',{method:'POST'}).catch(function(){});
+    return;
+  }
+  try{
+    var r=await fetchTimeout(PROXY+'/btc_result?market_id='+trade.mid, 8000);
+    var d=await r.json();
+    lg('bLog','Sonuç API: resolved='+d.resolved+' winner='+d.winner,'i');
+    if(d.resolved && !d.winner){
+      try{
+        var mr2=await fetchTimeout(PROXY+'/btc_market?slot='+Math.floor(Date.now()/1000/300)*300, 5000);
+        var md2=await mr2.json();
+        if(md2&&md2.market){
+          var up2=parseFloat(md2.market.up_price||0);
+          var dn2=parseFloat(md2.market.down_price||0);
+          lg('bLog','Fiyat kontrolü: UP='+up2.toFixed(3)+' DOWN='+dn2.toFixed(3),'i');
+          // Sadece çok kesin eşikte winner çıkar — tahmin yapma
+          if(up2>=0.97) d.winner='UP';
+          else if(dn2>=0.97) d.winner='DOWN';
+          // Aksi halde beklemeye devam et
+          if(d.winner) lg('bLog','Fiyattan winner çıkarıldı: '+d.winner,'w');
+          else lg('bLog','Fiyat kesin değil, bekleniyor...','i');
+        }
+      }catch(e2){}
+    }
+    if(d.resolved&&d.winner){
+      var won=d.winner.toUpperCase()===trade.dir;
+      trade.status=won?'win':'loss';
+      if(won){
+        trade.pnl=0; // gerçek PnL redeem'den gelecek
+        BS.wins++;
+      } else {
+        trade.pnl=-trade.bet;
+        BS.loss++;BS.pnl+=trade.pnl;
+      }
+      BS.pnlHistory.push({t:ts(),v:BS.pnl});
+      trade.date=new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'});
+      trade.dateISO=new Date().toISOString();
+      try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+      lg('bLog',trade.dir+' vs '+d.winner.toUpperCase()+' | '+(won?'KAZANDI +$'+trade.pnl.toFixed(2):'KAYBETTİ -$'+trade.bet.toFixed(2)),'o');
+      bRender(); bStats(); updatePnlChart();
+      // Açık emirleri temizle (kaybedildiyse açık emir kalmış olabilir)
+      fetch(PROXY+'/cancel_all_orders',{method:'POST'}).catch(function(){});
+      if(!trade.dry && trade.mid){
+        fetch(PROXY+'/redeem_market?market_id='+trade.mid,{method:'POST'})
+          .then(function(r){return r.json();})
+          .then(function(rd){
+            if(rd.success){
+              trade._redeemed=true;
+              lg('bLog','✅ REDEEM TX: '+rd.txhash.substring(0,16)+'...','o');
+              // Gerçek payout varsa PnL'i güncelle
+              if(rd.payout && rd.payout>0){
+                var realPnl=+(rd.payout-trade.bet).toFixed(2);
+                BS.pnl-=trade.pnl; // eski tahmini çıkar
+                trade.pnl=realPnl;
+                BS.pnl+=realPnl;
+                lg('bLog','Gerçek PnL: bet=$'+trade.bet.toFixed(2)+' payout=$'+rd.payout.toFixed(2)+' kâr=$'+realPnl.toFixed(2),'o');
+                bRender(); bStats(); updatePnlChart();
+                try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+              }
+              setTimeout(fetchBalance,5000);setTimeout(fetchBalance,12000);setTimeout(fetchBalance,25000);
+            } else {
+              lg('bLog','Redeem hata: '+rd.error+' — genel redeem deneniyor','e');
+              fetch(PROXY+'/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).catch(function(){});
+              setTimeout(fetchBalance,8000);
+            }
+          }).catch(function(e){lg('bLog','Redeem hata: '+e.message,'e');setTimeout(fetchBalance,10000);});
+      }
+    } else {
+      // İlk 10 deneme hızlı (8sn), sonra yavaşla
+      var wait=retries<10?8000:retries<15?15000:20000;
+      lg('bLog','Sonuç henüz belli değil, '+(wait/1000)+'sn sonra tekrar. ('+retries+'/20)','w');
+      setTimeout(function(){bCheckResult(trade,retries+1);},wait);
+    }
+  }catch(e){
+    lg('bLog','Sonuç alınamadı: '+e.message+' — 15sn sonra tekrar.','e');
+    setTimeout(function(){bCheckResult(trade,retries+1);},15000);
+  }
+}
+
+function setBFilter(f){
+  BS_FILTER=f;
+  _setBtnActive('flt_','flt_'+f);
+  bRender(); bStats(); updatePnlChart();
+}
+function bRender(){
+  var b=document.getElementById('b_tb');
+  var trades=bFilteredTrades();
+  // Açık işlem bar
+  var openTrade=BS.trades.find(function(t){return t.status==='open';});
+  var bar=document.getElementById('open_trade_bar');
+  var info=document.getElementById('open_trade_info');
+  if(openTrade && bar && info){
+    bar.style.display='flex';
+    var dc=openTrade.dir==='UP'?'color:var(--green)':'color:var(--red)';
+    info.innerHTML='<span style="'+dc+';font-weight:700;font-size:13px">'+openTrade.dir+'</span>'
+      +' &nbsp;@ <b>'+( openTrade.price*100).toFixed(1)+'%</b>'
+      +' &nbsp;| Maliyet: <b>$'+openTrade.bet.toFixed(2)+'</b>'
+      +' &nbsp;| '+openTrade.market.substring(0,35);
+    // Kazanç/kayıp potansiyeli
+    var winAmt=+((openTrade.size*(1-openTrade.price))-openTrade.bet).toFixed(2);
+    var loseAmt=openTrade.bet;
+    var pot=document.getElementById('open_trade_potential');
+    if(pot) pot.innerHTML=
+      '<span style="color:var(--green);font-weight:700">✓ Kazanırsan: +$'+winAmt.toFixed(2)+'</span>'
+      +'&nbsp;&nbsp;<span style="color:var(--red);font-weight:700">✗ Kaybedersen: -$'+loseAmt.toFixed(2)+'</span>';
+  } else if(bar){
+    bar.style.display='none';
+  }
+  if(!trades.length){b.innerHTML='<tr><td colspan="6"><div class="es"><div>--</div>'+( BS_FILTER==='today'?'Bugün işlem yok':BS_FILTER==='week'?'Bu hafta işlem yok':'Henüz işlem yok')+'</div></td></tr>';document.getElementById('b_trd').textContent='0 işlem';return;}
+  var closedTrades=trades.filter(function(t){return t.status==='win'||t.status==='loss';});
+  // En yeni işlem önde
+  closedTrades=closedTrades.slice().sort(function(a,b){return (b.id||0)-(a.id||0);});
+  document.getElementById('b_trd').textContent=closedTrades.length+' işlem';
+  if(!closedTrades.length){b.innerHTML='<tr><td colspan="6"><div class="es"><div>--</div>'+(BS_FILTER==='today'?'Bugün tamamlanan işlem yok':'Tamamlanan işlem yok')+'</div></td></tr>';return;}
+  b.innerHTML=closedTrades.slice(0,100).map(function(t){
+    var dc=t.dir==='UP'?'sy':'sn';
+    var sc=t.status==='win'?'var(--green)':'var(--red)';
+    var sl=t.status==='win'?'✅ KAZANDI':'❌ KAYBETTİ';
+    // P&L: kazandıysa redeem tutarı var mı kontrol et
+    var ps;
+    if(t.status==='win'){
+      ps=t.pnl>0?'+$'+t.pnl.toFixed(2):'<span style="color:var(--yellow);font-size:9px">⏳ Redeem</span>';
+    } else {
+      ps='-$'+Math.abs(t.pnl||t.bet).toFixed(2);
+    }
+    var dry=t.dry?'<span style="font-size:8px;color:var(--yellow);margin-right:3px">[D]</span>':'';
+    var mkt=t.market?'<div style="font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;margin-top:2px">'+t.market+'</div>':'';
+    var wlBtns=t.status==='open'
+      ?'<div style="display:flex;gap:4px;margin-top:3px">'
+        +'<button onclick="bManualMark('+t.id+',\'win\')" style="font-size:10px;padding:2px 8px;background:rgba(0,255,136,.2);border:1px solid var(--green);color:var(--green);border-radius:3px;cursor:pointer;font-family:inherit;font-weight:700">W</button>'
+        +'<button onclick="bManualMark('+t.id+',\'loss\')" style="font-size:10px;padding:2px 8px;background:rgba(255,68,102,.2);border:1px solid var(--red);color:var(--red);border-radius:3px;cursor:pointer;font-family:inherit;font-weight:700">L</button>'
+        +'</div>'
+      :'<div style="font-size:11px;font-weight:700;color:'+sc+'">'+ps+'</div>';
+    return '<tr style="background:'+(t.status==='open'?'rgba(255,215,0,.03)':t.status==='win'?'rgba(0,255,136,.02)':'rgba(255,68,102,.02)')+'">'
+      +'<td style="color:var(--muted);font-size:10px;white-space:nowrap">'+t.time+'</td>'
+      +'<td><span class="'+dc+'" style="font-size:13px;font-weight:800">'+dry+t.dir+'</span></td>'
+      +'<td style="font-size:11px;color:var(--text)">'+(t.price*100).toFixed(1)+'%</td>'
+      +'<td style="font-size:11px;color:var(--white);font-weight:700">$'+(t.size&&t.price?(t.size*t.price).toFixed(2):t.bet.toFixed(2))+'</td>'
+      +'<td style="font-size:11px;font-weight:700;color:'+(t.status==='win'&&t.pnl>0?'var(--green)':'var(--muted)')+'">'+
+        (t.status==='win'&&t.pnl>0?'$'+(t.bet+t.pnl).toFixed(2):t.status==='win'?'⏳':t.status==='loss'?'—':'—')+'</td>'
+      +'<td><span style="color:'+sc+';font-size:10px;font-weight:700">'+sl+'</span>'+mkt+'</td>'
+      +'<td style="font-size:11px;font-weight:700;color:'+(t.status==='win'?'var(--green)':'var(--red)')+'">'+(t.status==='win'?'+$'+t.pnl.toFixed(2):t.status==='loss'?'-$'+Math.abs(t.pnl||t.bet).toFixed(2):'—')+'</td>'
+      +'<td>'+wlBtns+'</td>'
+      +'</tr>';
+  }).join('');
+}
+function bManualMark(id, res){
+  var t=BS.trades.find(function(x){return x.id===id;});
+  if(!t||t.status!=='open') return;
+  t.status=res;
+  if(res==='win'){
+    t.pnl=+(t.size*(1-t.price)).toFixed(2);
+    BS.wins++;BS.pnl+=t.pnl;BS.totalWon+=t.pnl;
+    lg('bLog','✋ Manuel WIN: +$'+t.pnl.toFixed(2)+' — redeem deneniyor...','o');
+    if(!t.dry && t.mid){
+      t._redeemTried=true;
+      fetch(PROXY+'/redeem_market?market_id='+t.mid,{method:'POST'})
+        .then(function(r){return r.json();})
+        .then(function(rd){
+          if(rd.redeemed>0) lg('bLog','✅ REDEEM OK: '+(rd.txhash||'').substring(0,16)+'...','o');
+          else { lg('bLog','Redeem pozisyon bulunamadı — genel redeem deneniyor','w'); fetch(PROXY+'/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); }
+          setTimeout(fetchBalance,4000); setTimeout(fetchBalance,12000); setTimeout(fetchBalance,25000);
+        }).catch(function(e){lg('bLog','Redeem hata: '+e.message,'e');});
+    }
+  } else {
+    t.pnl=-t.bet;
+    BS.loss++;BS.pnl+=t.pnl;
+    lg('bLog','✋ Manuel LOSS: -$'+t.bet.toFixed(2),'e');
+  }
+  BS.pnlHistory.push({t:ts(),v:BS.pnl});
+  try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+  fetch(PROXY+'/cancel_all_orders',{method:'POST'}).catch(function(){});
+  bRender(); bStats(); updatePnlChart(); fetchBalance();
+}
+
+function bStats(){
+  var trades=bFilteredTrades();
+  var wins=trades.filter(function(t){return t.status==='win';}).length;
+  var loss=trades.filter(function(t){return t.status==='loss';}).length;
+  var pnl=trades.reduce(function(s,t){return s+(t.pnl||0);},0);
+  var cl=wins+loss;
+  document.getElementById('b_wl').textContent=wins+' / '+loss;
+  document.getElementById('b_wr').textContent=cl?'Başarı: '+(wins/cl*100).toFixed(0)+'%':'Başarı: —';
+  var el=document.getElementById('b_pnl');
+  el.textContent=(pnl>=0?'+$':'-$')+Math.abs(pnl).toFixed(2);
+  el.className='cv '+(pnl>0?'g':pnl<0?'r':'');
+  var pp=Math.min(100,Math.max(0,50+(pnl/10)*50));
+  document.getElementById('b_pb').style.width=pp+'%';
+  document.getElementById('b_pb').style.background=pnl>=0?'var(--green)':'var(--red)';
+  // Tüm zamanlar P&L (localStorage'daki tüm işlemler)
+  var allTrades=BS.trades.filter(function(t){return t.status!=='open';});
+  var allWins=allTrades.filter(function(t){return t.status==='win';}).length;
+  var allLoss=allTrades.filter(function(t){return t.status==='loss';}).length;
+  var allPnl=allTrades.reduce(function(s,t){return s+(t.pnl||0);},0);
+  var allTotal=allWins+allLoss;
+  var allEl=document.getElementById('b_allpnl');
+  if(allEl){
+    allEl.textContent=(allPnl>=0?'+$':'-$')+Math.abs(allPnl).toFixed(2);
+    allEl.className='cv '+(allPnl>0?'g':allPnl<0?'r':'');
+  }
+  var allWrEl=document.getElementById('b_allwr');
+  if(allWrEl) allWrEl.textContent=allTotal+' işlem | '+(allTotal?(allWins/allTotal*100).toFixed(0)+'% başarı':'—');
+}
+
+function updatePnlChart(){
+  // Her zaman TÜM kapalı gerçek işlemleri kullan — filtre grafik sırasını bozmasın
+  var allClosed=BS.trades.filter(function(t){return (t.status==='win'||t.status==='loss')&&!t.dry;});
+  allClosed=allClosed.slice().sort(function(a,b){return (a.id||0)-(b.id||0);}); // eskiden yeniye
+  if(!allClosed.length){ if(pnlChart){pnlChart.data.labels=[];pnlChart.data.datasets[0].data=[];pnlChart.update();} return; }
+  var fHistory=[]; var cum=0;
+  allClosed.forEach(function(t){cum+=(t.pnl||0);fHistory.push({t:t.time,v:cum});});
+  if(!pnlChart) return;
+  pnlChart.data.labels=fHistory.map(function(h){return h.t;});
+  pnlChart.data.datasets[0].data=fHistory.map(function(h){return h.v;});
+  var lastV=fHistory[fHistory.length-1].v;
+  pnlChart.data.datasets[0].borderColor=lastV>=0?'#00ff88':'#ff4466';
+  pnlChart.data.datasets[0].backgroundColor=lastV>=0?'rgba(0,255,136,0.05)':'rgba(255,68,102,0.05)';
+  pnlChart.update();
+}
+
+function showFVGSignal(dir, barId){
+  var bar=document.getElementById(barId);
+  if(!bar) return;
+  if(!dir){bar.style.display='none';return;}
+  var isUp=dir==='UP';
+  var col=isUp?'rgba(0,255,136,0.9)':'rgba(255,68,102,0.9)';
+  var bg=isUp?'rgba(0,255,136,0.15)':'rgba(255,68,102,0.15)';
+  var brd=isUp?'rgba(0,255,136,0.5)':'rgba(255,68,102,0.5)';
+  bar.innerHTML=(isUp?'▲ FVG UP':'▼ FVG DOWN');
+  bar.style.color=col;
+  bar.style.background=bg;
+  bar.style.border='1px solid '+brd;
+  bar.style.display='block';
+}
+
+function flashFVG(dir){
+  showFVGSignal(dir,'fvg_signal_bar');
+}
+
+function bToggle(){
+  if(BS.run){ bStop(); } else { bStart(); }
+}
+
+function bStart(){
+  BS.bet=parseFloat(document.getElementById('b_bet').value)||1;
+  BS.maxPrice=parseFloat(document.getElementById('b_mp').value)||0.50;
+  BS.minBalance=(parseFloat(document.getElementById('b_balance').value)||35)/100;
+  BS.dry=document.getElementById('b_mod').value==='dry';
+  BS.interval=(parseInt(document.getElementById('b_interval').value)||15)*1000;
+  BS.run=true;
+  // Mod seçimine göre işlem geçmişi ve grafik otomatik filtrele
+  BS_MODE_FILTER=BS.dry?'demo':'real';
+  try{localStorage.setItem('polybot_last_mode_btc5',BS_MODE_FILTER);}catch(e){}
+  _setBtnActive('flt_mode_','flt_mode_'+BS_MODE_FILTER);
+  // Başlık güncelle
+  var histMode=document.getElementById('b_hist_mode');
+  if(histMode) histMode.textContent=BS.dry?'[Demo]':'[Gerçek]';
+  bRender(); bStats(); updatePnlChart();
+  if(BS.tmr) clearInterval(BS.tmr);
+  var btn=document.getElementById('startStopBtn');
+  if(btn){btn.textContent='DURDUR';btn.className='btn btn-r';}
+  document.getElementById('sDot').className='dot '+(BS.dry?'dry':'');
+  document.getElementById('sTxt').textContent=BS.dry?'DEMO':'CANLI';
+  lg('bLog','Bot başlatıldı. Mod: '+(BS.dry?'DEMO':'CANLI')+' | Bahis: $'+BS.bet+' | Tarama: '+(BS.interval/1000)+'sn','w');
+  if(!BS.dry) lg('bLog','GERÇEK PARA MODU AKTİF! Her işlem $'+BS.bet+' harcayacak.','w');
+  bScan();
+  BS.tmr=setInterval(bScan, BS.interval);
+  if(BS.chartTmr) clearInterval(BS.chartTmr);
+  BS.chartTmr=setInterval(updateChartOnly,1000);
+  // Gerçek modda otomatik Poly Sync — başlangıçta ve her 3 dakikada bir
+  if(!BS.dry){
+    if(BS.syncTmr) clearInterval(BS.syncTmr);
+    setTimeout(polySync, 3000); // 3sn sonra ilk sync
+    BS.syncTmr=setInterval(polySync, 3*60*1000); // her 3dk
+    lg('bLog','🔃 Otomatik Poly Sync aktif (her 3dk).','i');
+  }
+}
+function bStop(){
+  BS.run=false;
+  if(BS.tmr) clearInterval(BS.tmr);
+  if(BS.cdTmr) clearInterval(BS.cdTmr);
+  if(BS.chartTmr) clearInterval(BS.chartTmr);
+  if(BS.syncTmr) clearInterval(BS.syncTmr);
+  var btn=document.getElementById('startStopBtn');
+  if(btn){btn.textContent='BAŞLAT';btn.className='btn btn-a';}
+  document.getElementById('b_ns').textContent='—';
+  document.getElementById('sTxt').textContent='DURDURULDU';
+  lg('bLog','Bot durduruldu.','w');
+}
+
+// Sadece grafik güncelle (2sn interval)
+async function updateChartOnly(){
+  if(!BS.run) return;
+  try{
+    var results=await Promise.all([
+      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=12').then(function(r){return r.json();}).then(function(d){return d.map(function(c){return {time:parseInt(c[0]),open:parseFloat(c[1]),high:parseFloat(c[2]),low:parseFloat(c[3]),close:parseFloat(c[4]),volume:parseFloat(c[5])};});}),
+      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=30').then(function(r){return r.json();}).then(function(d){return d.map(function(c){return {time:parseInt(c[0]),open:parseFloat(c[1]),high:parseFloat(c[2]),low:parseFloat(c[3]),close:parseFloat(c[4]),volume:parseFloat(c[5])};});})
+    ]);
+    var c5=results[0], c1=results[1];
+    BS.lastCandles=c5; BS.lastCandles1m=c1;
+    var cls1m=c1.map(function(c){return c.close;});
+    var cls5=c5.map(function(c){return c.close;});
+    if(bChart){
+      bChart.data.datasets[0].data=c1.map(function(c){return {x:c.time,o:c.open,h:c.high,l:c.low,c:c.close};});
+      // Son 20 mumda ihlal edilmemiş FVG'leri göster
+      var _c1=c1.slice();
+      var _oc=null;
+      if(_c1.length>0 && Date.now()<_c1[_c1.length-1].time+60000){_oc=_c1[_c1.length-1];_c1=_c1.slice(0,-1);}
+      var _wo=_oc?_c1.concat([_oc]):_c1;
+      bChart._fvgData=detectFVG(_c1).filter(function(f){return !isFVGMitigated(f,_wo);});
+      bChart.update('none');
+    }
+    if(bChart5m){
+      var cd5=c5.slice(-3).map(function(d){return {x:d.time,o:d.open,h:d.high,l:d.low,c:d.close};});
+      bChart5m.data.datasets[0].data=cd5;
+      bChart5m.update('none');
+    }
+    // Fiyat güncelle - 1s son fiyatından
+    var lastS=c1.slice(-1)[0].close, prev=cls1m[cls1m.length-2]||lastS;
+    document.getElementById('b_pr').textContent='$'+lastS.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    document.getElementById('b_pr').className='cv '+(lastS>=prev?'g':'r');
+    document.getElementById('b_pc').textContent=((lastS>=prev?'+':'')+((lastS-prev)/prev*100).toFixed(2))+'%';
+  }catch(e){}
+}
+
+// Redeem durumunu çek
+var BOT_ADDR='0xf32F6e0F09EEc34ebac499e704f57728fAB52853';
+async function fetchRedeemStatus(){
+  try{
+    var r=await fetch(PROXY+'/positions');
+    if(!r.ok) return;
+    var positions=await r.json();
+    if(!Array.isArray(positions)) return;
+    var pending=0, pendingCount=0;
+    positions.forEach(function(p){
+      if(p.redeemable){
+        var val=parseFloat(p.currentValue||0);
+        if(val>0){ pending+=val; pendingCount++; }
+      }
+    });
+    // Tüm botların gerçek işlem geçmişinden maliyet ve net kâr hesapla
+    var allTrades=[];
+    try{
+      ['e','x','sl'].forEach(function(pfx){
+        var key='polybot_'+pfx+'_trades';
+        try{ var t=JSON.parse(localStorage.getItem(key)||'[]'); allTrades=allTrades.concat(t); }catch(e){}
+      });
+    }catch(e){}
+    var realTrades=allTrades.filter(function(t){return !t.dry&&(t.status==='win'||t.status==='loss');});
+    // pnl=0 olan win'ler aslında eski/hatalı kayıt — maliyet hesabına dahil etme
+    var confirmedTrades=realTrades.filter(function(t){return (parseFloat(t.pnl)||0)!==0;});
+    // Maliyet = sadece pnl'i kesinleşmiş işlemlerin bahisleri
+    var totalCost=confirmedTrades.reduce(function(s,t){return s+(parseFloat(t.bet)||0);},0);
+    // Alındı = kazanılan işlemlerde geri alınan toplam
+    var totalRedeemed=confirmedTrades.filter(function(t){
+      return t.status==='win' && (parseFloat(t.pnl)||0)>0;
+    }).reduce(function(s,t){return s+(parseFloat(t.bet)||0)+(parseFloat(t.pnl)||0);},0);
+    // Net kâr
+    var netProfit=confirmedTrades.reduce(function(s,t){return s+(parseFloat(t.pnl)||0);},0);
+    // pnl=0 win = eski/hatalı kayıt sayısı (gerçekte Polymarket'ta yok)
+    var pendingWins=realTrades.filter(function(t){return t.status==='win'&&(parseFloat(t.pnl)||0)===0;}).length;
+    var done=totalRedeemed>0?totalRedeemed:0;
+    document.getElementById('rdm_pending').textContent='$'+pending.toFixed(2);
+    document.getElementById('rdm_done').textContent='$'+totalRedeemed.toFixed(2);
+    document.getElementById('rdm_cost').textContent='$'+totalCost.toFixed(2);
+    var netEl=document.getElementById('rdm_net');
+    netEl.textContent=(netProfit>=0?'+$':'-$')+Math.abs(netProfit).toFixed(2);
+    netEl.style.color=netProfit>=0?'var(--green)':'var(--red)';
+    var statusParts=[];
+    if(pendingCount>0) statusParts.push(pendingCount+' Polymarket\'ta bekleyen');
+    else statusParts.push('Polymarket\'ta bekleyen yok');
+    if(pendingWins>0) statusParts.push(pendingWins+' eski kayıt (pnl=0) — temizlemek için 🧹 bas');
+    document.getElementById('rdm_status').textContent=statusParts.join(' | ');
+  }catch(e){console.log('rdm err',e);}
+}
+setInterval(fetchRedeemStatus,20000);
+fetchRedeemStatus();
+
+async function doWithdraw(){
+  var amtEl=document.getElementById('transfer_amount');
+  var amt=parseFloat(amtEl?amtEl.value:0);
+  if(!amt||amt<=0){alert('Geçerli bir miktar girin');return;}
+  var stEl=document.getElementById('transfer_status');
+  if(stEl) stEl.textContent='⏳ Çekme işlemi başlatılıyor...';
+  lg('bLog','⬇ Withdraw: $'+amt.toFixed(2)+' proxy → MetaMask...','w');
+  try{
+    await fetch(PROXY+'/cancel_all_orders',{method:'POST'}).catch(function(){});
+    var r=await fetch(PROXY+'/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amt})});
+    var d=await r.json();
+    if(d.success){
+      lg('bLog','✅ WITHDRAW: $'+d.amount_usdc.toFixed(2)+' TX: '+d.tx.substring(0,16)+'...','o');
+      if(stEl) stEl.textContent='✅ $'+d.amount_usdc.toFixed(2)+' çekildi';
+      setTimeout(fetchBalance,8000); setTimeout(fetchBalance,20000);
+    } else {
+      lg('bLog','❌ Withdraw hata: '+d.error,'e');
+      if(stEl) stEl.textContent='❌ Hata: '+d.error;
+    }
+  }catch(e){lg('bLog','Withdraw hata: '+e.message,'e');if(stEl)stEl.textContent='❌ '+e.message;}
+}
+
+async function doDeposit(){
+  var amtEl=document.getElementById('transfer_amount');
+  var amt=parseFloat(amtEl?amtEl.value:0);
+  if(!amt||amt<=0){alert('Geçerli bir miktar girin');return;}
+  var stEl=document.getElementById('transfer_status');
+  // MetaMask'tan proxy'ye transfer — ethers.js ile
+  if(typeof window.ethereum==='undefined'){
+    if(stEl) stEl.textContent='❌ MetaMask bulunamadı';
+    lg('bLog','❌ MetaMask yok. Tarayıcıda MetaMask kurulu olmalı.','e'); return;
+  }
+  try{
+    if(stEl) stEl.textContent='⏳ MetaMask onayı bekleniyor...';
+    lg('bLog','⬆ Deposit: $'+amt.toFixed(2)+' MetaMask → Proxy...','w');
+    var accounts=await window.ethereum.request({method:'eth_requestAccounts'});
+    var from=accounts[0];
+    var USDC='0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+    var TO='0xf32F6e0F09EEc34ebac499e704f57728fAB52853';
+    var amtWei='0x'+Math.round(amt*1e6).toString(16);
+    // ERC20 transfer(address,uint256) = 0xa9059cbb
+    var data='0xa9059cbb'+TO.slice(2).padStart(64,'0')+amtWei.slice(2).padStart(64,'0');
+    var txHash=await window.ethereum.request({method:'eth_sendTransaction',params:[{from:from,to:USDC,data:data}]});
+    lg('bLog','✅ DEPOSIT TX: '+txHash.substring(0,16)+'...','o');
+    if(stEl) stEl.textContent='✅ TX gönderildi: '+txHash.substring(0,16)+'...';
+    setTimeout(fetchBalance,15000); setTimeout(fetchBalance,30000);
+  }catch(e){
+    lg('bLog','❌ Deposit hata: '+e.message,'e');
+    if(stEl) stEl.textContent='❌ '+e.message;
+  }
+}
+
+async function manualDeposit(){ doDeposit(); }
+
+function cleanStaleWins(){
+  // Coin botları makeCoinBot içinde — global referanslar hazır olana kadar bekle
+  var coinBots=[
+  ];
+  var keys=[
+    {key:'polybot_trades',      label:'BTC5',  obj:BS,   logId:'bLog'},
+  ];
+  var totalRemoved=0;
+
+  function filterTrades(saved){
+    return saved.filter(function(t){
+      if(t.status==='open'&&!t.dry) return false;
+      if(t.status==='loss') return true;
+      if(t.dry) return true;
+      if(t.status==='win'&&(parseFloat(t.pnl)||0)>0) return true;
+      if(t.status==='win'&&(parseFloat(t.pnl)||0)===0) return false;
+      return true;
+    });
+  }
+
+  // BTC5 ve BTC15
+  keys.forEach(function(k){
+    try{
+      var saved=JSON.parse(localStorage.getItem(k.key)||'[]');
+      var before=saved.length;
+      saved=filterTrades(saved);
+      var removed=before-saved.length;
+      totalRemoved+=removed;
+      localStorage.setItem(k.key,JSON.stringify(saved));
+      if(removed>0) lg(k.logId,'🧹 '+removed+' sahte kayıt temizlendi ('+k.label+')','w');
+      else lg(k.logId,'✅ '+k.label+' temiz','i');
+      k.obj.trades=saved;
+      k.obj.wins=0; k.obj.loss=0; k.obj.pnl=0;
+      saved.forEach(function(t){
+        if(t.status==='win'){k.obj.wins++;k.obj.pnl+=parseFloat(t.pnl)||0;}
+        else if(t.status==='loss'){k.obj.loss++;k.obj.pnl+=parseFloat(t.pnl)||0;}
+      });
+    }catch(e){lg(k.logId,'Temizleme hata: '+e.message,'e');}
+  });
+
+  // ETH, XRP, SOL
+  coinBots.forEach(function(k){
+    try{
+      var saved=JSON.parse(localStorage.getItem(k.key)||'[]');
+      var before=saved.length;
+      saved=filterTrades(saved);
+      var removed=before-saved.length;
+      totalRemoved+=removed;
+      localStorage.setItem(k.key,JSON.stringify(saved));
+      if(removed>0) lg(k.logId,'🧹 '+removed+' sahte kayıt temizlendi ('+k.label+')','w');
+      else lg(k.logId,'✅ '+k.label+' temiz','i');
+      // ST objesini güncelle
+      var bot=k.getBot();
+      if(bot&&bot.ST){
+        bot.ST.trades=saved;
+        bot.ST.wins=0; bot.ST.loss=0; bot.ST.pnl=0;
+        saved.forEach(function(t){
+          if(t.status==='win'){bot.ST.wins++;bot.ST.pnl+=parseFloat(t.pnl)||0;}
+          else if(t.status==='loss'){bot.ST.loss++;bot.ST.pnl+=parseFloat(t.pnl)||0;}
+        });
+      }
+    }catch(e){lg(k.logId,'Temizleme hata: '+e.message,'e');}
+  });
+
+  lg('bLog','🧹 Toplam '+totalRemoved+' sahte kayıt temizlendi.','w');
+
+  // UI güncelle
+  setTimeout(function(){
+    bRender(); bStats(); updatePnlChart();
+    updatePortfolio();
+    fetchRedeemStatus();
+  },200);
+}
+
+async function checkPositions(){
+  lg('bLog','🔍 Polymarket pozisyonları sorgulanıyor...','w');
+  try{
+    var r=await fetch(PROXY+'/check_positions');
+    var d=await r.json();
+    var msgs=[];
+    ['proxy','eoa'].forEach(function(w){
+      if(!d[w]) return;
+      var wd=d[w];
+      msgs.push('💼 '+w.toUpperCase()+' ('+wd.addr.substring(0,10)+'...): '+wd.total+' pozisyon, '+wd.redeemable+' redeemable');
+      if(wd.to_redeem&&wd.to_redeem.length){
+        wd.to_redeem.forEach(function(p){
+          msgs.push('  ✅ Bekleyen: '+p.market.substring(0,35)+' | $'+p.currentValue.toFixed(2));
+        });
+      }
+    });
+    if(!msgs.length) msgs.push('Pozisyon bulunamadı veya proxy bağlantı hatası');
+    msgs.forEach(function(m){lg('bLog',m,'i');});
+  }catch(e){lg('bLog','Pozisyon sorgu hata: '+e.message,'e');}
+}
+
+async function polySync(){
+  try{
+    var r=await fetch(PROXY+'/trade_history?limit=500&btc_only=true');
+    var d=await r.json();
+    if(!d.success){lg('bLog','Poly Sync hata: '+(d.error||'?'),'e');return;}
+
+    var polyTrades=d.trades||[];
+    if(!polyTrades.length){
+      lg('bLog','⚠️ Poly Sync: işlem bulunamadı. Debug için: '+PROXY+'/trade_history?debug=true','w');
+      return;
+    }
+    // İlk trade'i debug için logla
+    if(polyTrades[0]) lg('bLog','Debug ilk kayıt: '+JSON.stringify(polyTrades[0]),'i');
+
+    lg('bLog','━━━━━━━━━━━━━━━━━━━━━━','i');
+    lg('bLog','📈 POLY SYNC: '+polyTrades.length+' işlem | Kazandı: '+d.wins+' | Kaybetti: '+d.losses,'o');
+    lg('bLog','Toplam maliyet: $'+d.total_cost.toFixed(2)+' | Redeem: $'+d.total_redeem.toFixed(2),'i');
+    lg('bLog','Net P&L: '+(d.total_pnl>=0?'+':'')+d.total_pnl.toFixed(2),(d.total_pnl>=0?'o':'e'));
+    // Deposit güncelle — 0 gelirse mevcut localStorage değerini koru
+    if(d.total_deposit > 0){
+      saveDeposit(d.total_deposit);
+      lg('bLog','💰 Toplam Deposit: $'+d.total_deposit.toFixed(2),'i');
+    } else {
+      var existingDep = parseFloat(localStorage.getItem('polybot_total_deposit')||0);
+      if(existingDep > 0){
+        lg('bLog','💰 Deposit (önbellek): $'+existingDep.toFixed(2),'i');
+      } else {
+        lg('bLog','⚠️ Deposit çekilemedi — proxy/Polygonscan API key kontrol et.','w');
+      }
+    }
+    lg('bLog','━━━━━━━━━━━━━━━━━━━━━━','i');
+
+    // _redeemed flag'lerini kalıcı set'ten geri yaz
+    polyTrades.forEach(function(t){
+      if(t.mid && _isRedeemed(t.mid)) t._redeemed=true;
+    });
+
+    // KRİTİK: Açık trade varsa dikkatli replace et
+    // Yeni emir Polymarket'a gecikmeli yansır — ama resolve olmuşsa güncelle
+    var openTrade = BS.trades.find(function(t){ return t.status==='open'; });
+    if(openTrade){
+      // Poly Sync aynı mid'i win/loss olarak döndürdü mü?
+      var polyVersion = polyTrades.find(function(t){ return t.mid === openTrade.mid; });
+      if(polyVersion && polyVersion.status !== 'open'){
+        // Poly resolve etti — artık open değil, tam replace yap
+        lg('bLog','ℹ️ Poly Sync: açık trade resolve oldu ('+polyVersion.status.toUpperCase()+') — güncelleniyor.','i');
+        // Telegram bildirimi — sonuç Poly Sync üzerinden geldi
+        var _pnl = parseFloat(polyVersion.pnl||0);
+        var _won = polyVersion.status==='win';
+        fetch(PROXY+'/notify_trade',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            direction: polyVersion.dir||openTrade.dir,
+            price: parseFloat(polyVersion.price||openTrade.price||0),
+            bet: parseFloat(polyVersion.bet||openTrade.bet||0),
+            status: polyVersion.status,
+            pnl: _pnl,
+            market: polyVersion.market||openTrade.market||'',
+            bot:'BTC5'
+          })}).catch(function(){});
+        BS.trades = polyTrades;
+      } else {
+        // endDate geçmişse artık koruma yok — Poly Sync replace etsin
+        var _oEndTs=0;
+        try{ var _oEp=new Date(openTrade.endDate||''); if(!isNaN(_oEp)) _oEndTs=_oEp.getTime(); }catch(e){}
+        var _oExpired = _oEndTs>0 && Date.now() > _oEndTs + 2*60*1000; // endDate+2dk
+        if(_oExpired){
+          lg('bLog','ℹ️ Poly Sync: açık trade süresi doldu, replace ediliyor.','w');
+          BS.trades = polyTrades;
+        } else {
+          // Henüz resolve olmamış — open trade'i koru, kapalıları güncelle
+          var closedFromPoly = polyTrades.filter(function(t){ return t.status!=='open'; });
+          BS.trades = [openTrade].concat(closedFromPoly.filter(function(t){
+            return t.mid !== openTrade.mid;
+          }));
+          lg('bLog','ℹ️ Poly Sync: açık trade korundu ('+openTrade.dir+' '+openTrade.market.substring(0,25)+')','i');
+        }
+      }
+    } else {
+      BS.trades = polyTrades;
+    }
+    BS.wins=d.wins; BS.loss=d.losses; BS.pnl=d.total_pnl;
+    try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+    bRender(); bStats(); updatePnlChart();
+  }catch(e){lg('bLog','Poly Sync hata: '+e.message,'e');}
+}
+async function forceRedeem(){
+  // NOT: redeem_clear ÇAĞIRMA — cache temizlenirse Python loop patlar
+  // Sadece force=true ile doğrudan redeem et
+  lg('bLog','🔄 Force redeem başlatılıyor...','w');
+  try{
+    var r=await fetch(PROXY+'/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({force:true})});
+    var d=await r.json();
+    if(d.success){
+      lg('bLog','✅ Force Redeem: '+d.redeemed+' pozisyon redeem edildi'+(d.errors&&d.errors.length?' | '+d.errors.length+' hata':''),'o');
+      // _redeemed flag sıfırlama — sadece pnl=0 win'ler için, _redeemedMids SET korunuyor
+      BS.trades.forEach(function(t){
+        if(t.status==='win' && t.pnl===0 && !_isRedeemed(t.mid)) t._redeemed=false;
+      });
+    } else {
+      lg('bLog','❌ Force Redeem hata: '+d.error,'e');
+    }
+    setTimeout(fetchBalance,5000); setTimeout(fetchBalance,15000);
+    setTimeout(fetchRedeemStatus,8000);
+  }catch(e){ lg('bLog','Force Redeem hata: '+e.message,'e'); }
+}
+
+async function manualRedeem(){
+  lg('bLog','⚡ Manuel redeem başlatılıyor...','w');
+  try{
+    var r=await fetch(PROXY+'/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    var d=await r.json();
+    if(d.success){
+      lg('bLog','✅ Redeem: '+d.redeemed+' pozisyon'+(d.errors&&d.errors.length?' | '+d.errors.length+' hata':''),'o');
+    } else {
+      lg('bLog','❌ Redeem hata: '+d.error,'e');
+    }
+    setTimeout(fetchBalance,5000); setTimeout(fetchBalance,15000);
+    setTimeout(fetchRedeemStatus,8000);
+  }catch(e){lg('bLog','Redeem hata: '+e.message,'e');}
+}
+
+// ── Kalıcı _redeemed set (localStorage + bellek) ─────────────────
+// polySync trades'i replace etse bile bu set korunur
+var _redeemedMids = (function(){
+  try{ return new Set(JSON.parse(localStorage.getItem('_redeemedMids')||'[]')); }
+  catch(e){ return new Set(); }
+})();
+function _saveRedeemedMids(){
+  try{ localStorage.setItem('_redeemedMids', JSON.stringify([..._redeemedMids])); }catch(e){}
+}
+function _markRedeemed(mid){
+  if(!mid) return;
+  _redeemedMids.add(mid);
+  _saveRedeemedMids();
+}
+function _isRedeemed(mid){
+  return mid && _redeemedMids.has(mid);
+}
+
+// OTO-REDEEM — her 2 dakikada, bot açık/kapalı fark etmez
+// 1) BS.trades'deki win'ler için redeem_market
+// 2) Polymarket positions API'den redeemable olanları da redeem et (status:'loss' kayıtlı olsa bile)
+var _otoRedeemRunning = false;
+async function _doAutoRedeem(){
+  if(_otoRedeemRunning) return;
+  _otoRedeemRunning = true;
+  try{
+    // 1. BS.trades'deki win'ler
+    var wins=BS.trades.filter(function(t){
+      return t.status==='win' && t.mid && !t.dry && !_isRedeemed(t.mid);
+    });
+    for(var i=0;i<wins.length;i++){
+      var t=wins[i];
+      if(_isRedeemed(t.mid)) continue;
+      try{
+        var r=await fetch(PROXY+'/redeem_market?market_id='+t.mid,{method:'POST'});
+        var d=await r.json();
+        if(d.success && d.redeemed>0){
+          _markRedeemed(t.mid);
+          t._redeemed=true;
+          try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+          lg('bLog','⚡ OTO-REDEEM (win): '+t.dir+' $'+t.mid.substring(0,10)+'...','o');
+          setTimeout(fetchBalance,5000);
+        }
+      }catch(e){}
+      await new Promise(function(res){setTimeout(res,2000);});
+    }
+
+    // 2. Polymarket positions API'den redeemable olanları — kayıt durumundan bağımsız
+    try{
+      var pr=await fetch(PROXY+'/positions');
+      var positions=await pr.json();
+      if(Array.isArray(positions)){
+        var redeemable=positions.filter(function(p){ return p.redeemable; });
+        for(var j=0;j<redeemable.length;j++){
+          var pos=redeemable[j];
+          var cid=pos.conditionId||'';
+          if(!cid || _isRedeemed(cid)) continue;
+          try{
+            var r2=await fetch(PROXY+'/redeem_market?market_id='+cid,{method:'POST'});
+            var d2=await r2.json();
+            if(d2.success && d2.redeemed>0){
+              _markRedeemed(cid);
+              var val=parseFloat(pos.currentValue||0);
+              lg('bLog','⚡ OTO-REDEEM (positions): $'+val.toFixed(2)+' '+cid.substring(0,12)+'...','o');
+              setTimeout(fetchBalance,5000);
+              // Telegram redeem bildirimi
+              if(val>0){
+                fetch(PROXY+'/notify_trade',{method:'POST',headers:{'Content-Type':'application/json'},
+                  body:JSON.stringify({direction:'?',price:0,bet:0,status:'win',pnl:val,market:pos.title||cid.substring(0,20),bot:'BTC5'})}).catch(function(){});
+              }
+            }
+          }catch(e){}
+          await new Promise(function(res){setTimeout(res,2000);});
+        }
+      }
+    }catch(pe){}
+  } finally {
+    _otoRedeemRunning = false;
+  }
+}
+// Her 2dk çalış — bot durmuş olsa da (bakiye koruma)
+setInterval(_doAutoRedeem, 120000);
+// Sayfa açılışında da bir kez çalıştır
+setTimeout(_doAutoRedeem, 10000);
+
+
+// ================================================================
+function saveDeposit(val){
+  var v=parseFloat(val)||0;
+  try{localStorage.setItem('polybot_total_deposit', v);}catch(e){}
+  var el=document.getElementById('pf_deposit');
+  if(el) el.textContent='$'+v.toFixed(2);
+  updatePortfolio();
+}
+function loadDeposit(){
+  try{
+    var v=parseFloat(localStorage.getItem('polybot_total_deposit')||0);
+    var inp=document.getElementById('deposit_input');
+    if(inp) inp.value=v||'';
+    var el=document.getElementById('pf_deposit');
+    if(el&&v>0) el.textContent='$'+v.toFixed(2);
+    return v;
+  }catch(e){return 0;}
+}
+function updatePortfolio(){
+  var saved=[];
+  try{saved=JSON.parse(localStorage.getItem('polybot_trades')||'[]');}catch(e){}
+  var closed=saved.filter(function(t){return t.status!=='open'&&!t.dry;});
+  var wins=closed.filter(function(t){return t.status==='win';}).length;
+  var losses=closed.filter(function(t){return t.status==='loss';}).length;
+  var totalPnl=closed.reduce(function(s,t){return s+(t.pnl||0);},0);
+  var totalCost=closed.reduce(function(s,t){return s+(t.bet||0);},0);
+  var totalRedeem=closed.reduce(function(s,t){return s+(t.payout||0);},0);
+  var total=wins+losses;
+
+  var btcEl=document.getElementById('pf_btc');
+  if(btcEl){btcEl.textContent=(totalPnl>=0?'+$':'-$')+Math.abs(totalPnl).toFixed(2);btcEl.style.color=totalPnl>0?'var(--green)':totalPnl<0?'var(--red)':'var(--muted)';}
+  var costEl=document.getElementById('pf_cost');
+  if(costEl){costEl.textContent='$'+totalCost.toFixed(2);costEl.style.color='var(--muted)';}
+  var redeemEl=document.getElementById('pf_redeem');
+  if(redeemEl){redeemEl.textContent='$'+totalRedeem.toFixed(2);redeemEl.style.color=totalRedeem>0?'var(--green)':'var(--muted)';}
+  var tEl=document.getElementById('pf_total');
+  if(tEl){tEl.textContent=(totalPnl>=0?'+$':'-$')+Math.abs(totalPnl).toFixed(2);tEl.style.color=totalPnl>0?'var(--green)':totalPnl<0?'var(--red)':'var(--white)';}
+  var wrEl=document.getElementById('pf_wr');
+  if(wrEl) wrEl.textContent=total+' işlem | '+(total?'Başarı: '+(wins/total*100).toFixed(0)+'%':'—');
+  var balEl=document.getElementById('pf_balance');
+  var balBadge=document.getElementById('balBadge');
+  if(balBadge&&balEl) balEl.textContent=balBadge.textContent.replace('BAKİYE: ','');
+}
+setInterval(updatePortfolio,10000);
+updatePortfolio();
+
+// Init
+pStats(); bStats();
+initCharts();
+fetchBalance();
+loadDeposit();
+setTimeout(updatePortfolio,2000);
+</script>
+</body>
+</html>
