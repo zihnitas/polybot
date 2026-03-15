@@ -333,7 +333,7 @@ tr:hover td{background:rgba(0,212,255,.04);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.17.0'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.17.1'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -481,7 +481,7 @@ _livePriceTmr=setInterval(_fetchLivePrice, 2000);
 async function doUpdate(){
   var btn=document.getElementById('updateBtn');
   if(btn){ btn.textContent='⏳ Güncelleniyor...'; btn.disabled=true; }
-  lg('bLog','🔄 GitHub'dan güncelleme başlatılıyor...','w');
+  lg('bLog','🔄 GitHub\'dan guncelleme baslatiliyor...','w');
   try{
     // Önce mevcut versiyon ile GitHub versiyonunu karşılaştır
     var cv=await fetch(PROXY+'/check_update');
