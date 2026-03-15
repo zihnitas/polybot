@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.19.0"
+VERSION = "3.20.0"
 
 app = Flask(__name__)
 CORS(app)
@@ -1540,6 +1540,86 @@ def check_allowance():
 # Redeem işlemi artık sadece dashboard OTO-REDEEM tarafından yönetiliyor.
 # Python loop + dashboard aynı anda TX gönderince çakışma ve patlama oluyordu.
 # Redeem tetikleyicileri: /redeem, /redeem_market, /redeem (force) endpoint'leri.
+
+
+# ── Otomatik güncelleme ───────────────────────
+GITHUB_RAW = "https://raw.githubusercontent.com/zihnitas/polybot/main"
+
+@app.route('/update', methods=['POST'])
+def update():
+    """GitHub'dan son versiyonu çek, dosyaları güncelle, proxy'yi yeniden başlat."""
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        updated = []
+        errors = []
+
+        # proxy_server.py güncelle
+        try:
+            r = requests.get(f"{GITHUB_RAW}/proxy_server.py", timeout=15)
+            if r.ok and len(r.text) > 1000:
+                proxy_path = os.path.join(script_dir, 'proxy_server.py')
+                with open(proxy_path, 'w', encoding='utf-8') as f:
+                    f.write(r.text)
+                updated.append('proxy_server.py')
+            else:
+                errors.append(f'proxy_server.py: HTTP {r.status_code}')
+        except Exception as e:
+            errors.append(f'proxy_server.py: {str(e)[:60]}')
+
+        # polymarket_dashboard.html güncelle
+        try:
+            r2 = requests.get(f"{GITHUB_RAW}/polymarket_dashboard.html", timeout=15)
+            if r2.ok and len(r2.text) > 1000:
+                html_path = os.path.join(script_dir, 'polymarket_dashboard.html')
+                with open(html_path, 'w', encoding='utf-8') as f:
+                    f.write(r2.text)
+                updated.append('polymarket_dashboard.html')
+            else:
+                errors.append(f'polymarket_dashboard.html: HTTP {r2.status_code}')
+        except Exception as e:
+            errors.append(f'polymarket_dashboard.html: {str(e)[:60]}')
+
+        if errors:
+            return jsonify({'success': False, 'updated': updated, 'errors': errors})
+
+        # Proxy'yi yeniden başlat (2sn sonra — response dönebilsin)
+        def _restart():
+            import time as _t, sys, subprocess
+            _t.sleep(2)
+            print("[UPDATE] Yeniden başlatılıyor...")
+            subprocess.Popen([sys.executable] + sys.argv)
+            os._exit(0)
+        threading.Thread(target=_restart, daemon=True).start()
+
+        return jsonify({
+            'success': True,
+            'updated': updated,
+            'message': 'Güncelleme tamamlandı, proxy yeniden başlatılıyor...'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/check_update')
+def check_update():
+    """GitHub'daki son versiyonu kontrol et."""
+    try:
+        r = requests.get(f"{GITHUB_RAW}/proxy_server.py", timeout=10)
+        if not r.ok:
+            return jsonify({'success': False, 'error': f'HTTP {r.status_code}'})
+        # Versiyon satırını bul
+        gh_version = None
+        for line in r.text.split('\n'):
+            if line.strip().startswith('VERSION'):
+                gh_version = line.split('"')[1] if '"' in line else line.split("'")[1]
+                break
+        return jsonify({
+            'success': True,
+            'current': VERSION,
+            'latest': gh_version,
+            'up_to_date': VERSION == gh_version
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     tg = threading.Thread(target=_tg_bot_loop, daemon=True)
