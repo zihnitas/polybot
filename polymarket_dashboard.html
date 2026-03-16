@@ -454,16 +454,15 @@ tr:hover td{background:rgba(0,240,255,0.03);}
           <span id="open_trade_potential" style="font-size:11px"></span>
         </div>
         <div style="overflow-x:auto;overflow-y:auto;max-height:220px">
-          <table style="width:100%;min-width:500px;table-layout:fixed">
-            <colgroup>
-              <col style="width:75px">
-              <col style="width:58px">
-              <col style="width:65px">
-              <col style="width:65px">
-              <col style="width:120px">
-              <col style="width:75px">
-            </colgroup>
-            <thead><tr><th style="white-space:nowrap">Saat</th><th>Yön</th><th>Fiyat</th><th>Maliyet</th><th>Sonuç</th><th>P&L</th></tr></thead>
+          <table style="width:100%;table-layout:auto">
+            <thead><tr>
+              <th style="white-space:nowrap;width:70px">Saat</th>
+              <th style="width:50px">Yön</th>
+              <th style="width:60px">Fiyat</th>
+              <th style="width:70px">Maliyet</th>
+              <th>Sonuç</th>
+              <th style="width:80px;text-align:right">P&L</th>
+            </tr></thead>
           <tbody id="b_tb"><tr><td colspan="6"><div class="es"><div>--</div>Henüz işlem yok</div></td></tr></tbody></table>
         </div>
       </div>
@@ -488,7 +487,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.2'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.4'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1793,10 +1792,13 @@ function bRender(){
         :'<span style="background:rgba(255,215,0,.2);color:var(--yellow);font-size:9px;padding:1px 6px;border-radius:10px;margin-left:8px">● AKTİF — yeni emir bekliyor</span>';
       bar.style.borderBottomColor=isExpired?'var(--muted)':'var(--yellow)';
       bar.style.background=isExpired?'rgba(100,120,140,0.04)':'rgba(255,215,0,0.06)';
+      var tradeTime = showTrade.time || (showTrade.dateISO ? toTR(showTrade.dateISO) : '—');
       info.innerHTML='<span style="'+dc+';font-weight:700;font-size:13px">'+showTrade.dir+'</span>'
-        +' &nbsp;@ <b>'+(showTrade.price*100).toFixed(1)+'%</b>'
+        +' <span style="font-size:10px;color:var(--muted2)">@ '+(showTrade.price*100).toFixed(1)+'%</span>'
         +' &nbsp;| Maliyet: <b>$'+showTrade.bet.toFixed(2)+'</b>'
-        +' &nbsp;| '+showTrade.market.substring(0,30)+statusBadge;
+        +' &nbsp;| <b>'+tradeTime+'</b>'
+        +' &nbsp;| <span style="color:var(--text2);font-size:10px">'+showTrade.market.substring(0,35)+'</span>'
+        +statusBadge;
       var winAmt=+((showTrade.size*(1-showTrade.price))-showTrade.bet).toFixed(2);
       var loseAmt=showTrade.bet;
       var pot=document.getElementById('open_trade_potential');
@@ -1844,7 +1846,7 @@ function bRender(){
         (t.status==='win'&&t.pnl>0?'$'+(t.bet+t.pnl).toFixed(2):t.status==='win'?'⏳':t.status==='loss'?'—':'—')+'</td>'
       +'<td><span style="color:'+sc+';font-size:10px;font-weight:700">'+sl+'</span>'+mkt+'</td>'
       +'<td style="font-size:11px;font-weight:700;color:'+(t.status==='win'?'var(--green)':'var(--red)')+'">'+(t.status==='win'?'+$'+t.pnl.toFixed(2):t.status==='loss'?'-$'+Math.abs(t.pnl||t.bet).toFixed(2):'—')+'</td>'
-      +'<td>'+wlBtns+'</td>'
+      +'<td style="text-align:right;white-space:nowrap">'+wlBtns+'</td>'
       +'</tr>';
   }).join('');
 }
