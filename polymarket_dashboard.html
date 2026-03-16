@@ -487,7 +487,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.4'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.5'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1431,7 +1431,15 @@ async function _bScan(){
       BS.lastMid=null;
     }
   }
-  var openTrades=BS.trades.filter(function(t){return t.status==='open';});
+  // Sadece endDate geçmemiş open trade'ler yeni emri engeller
+  var _now3=Date.now();
+  var openTrades=BS.trades.filter(function(t){
+    if(t.status!=='open') return false;
+    if(!t.endDate) return false; // endDate yoksa engelleme
+    var _ed3=new Date(t.endDate);
+    if(isNaN(_ed3)) return false;
+    return _now3 < _ed3.getTime(); // sadece aktif market
+  });
   if(openTrades.length>0){lg('bLog','Açık işlem var, yeni emir açılmıyor: '+openTrades[0].market.substring(0,30),'w');return;}
   if(!m.accepting_orders&&!m.acceptingOrders){lg('bLog','Piyasa emir kabul etmiyor.','w');return;}
   // Market dengeli değilse girme — bir taraf 40%'dan düşükse piyasa uç noktada demek
