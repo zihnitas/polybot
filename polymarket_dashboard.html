@@ -375,8 +375,9 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 
 <!-- ========== TAB 2 BTC ========== -->
 <div class="pane on" id="tb2">
-  <div class="sbar" style="grid-template-columns:repeat(5,1fr) auto;">
-    <div class="si"><label>Maliyet Üst Sınır ($)</label><input type="number" id="b_bet" value="2.50" min="1" step="0.5"></div>
+  <div class="sbar" style="grid-template-columns:repeat(6,1fr) auto;">
+    <div class="si"><label>Min Maliyet ($)</label><input type="number" id="b_bet" value="2.50" min="1" step="0.5" title="Minimum maliyet tutarı"></div>
+    <div class="si"><label>Bakiye Oranı (%)</label><input type="number" id="b_bet_pct" value="5" min="1" max="50" step="1" title="Bakiyenin yüzde kaçı — min maliyet'ten küçük olamaz"></div>
     <div class="si"><label>Max Fiyat (≤)</label><input type="number" id="b_mp" value="0.50" min="0.10" max="0.90" step="0.01"></div>
     <div class="si"><label>Tarama (sn)</label><input type="number" id="b_interval" value="15" min="5" max="60" step="5"></div>
     <div class="si"><label>Min Denge (%)</label><input type="number" id="b_balance" value="35" min="30" max="49" step="1"></div>
@@ -487,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.6'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.8'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -650,7 +651,15 @@ async function _fetchLivePrice(){
     }
   }catch(e){}
 }
-_livePriceTmr=setInterval(_fetchLivePrice, 2000);
+// Canlı fiyat — 800ms'de bir güncelle, donma koruması ile
+_livePriceTmr=setInterval(_fetchLivePrice, 800);
+// Donma koruması: 5sn'de fiyat değişmediyse token ID sıfırla
+var _lastLiveUp=0, _liveFreezeCheck=setInterval(function(){
+  if(BS._liveUp && BS._liveUp===_lastLiveUp){
+    _liveTokens.up=''; _liveTokens.down=''; // token sıfırla, yeniden çeksin
+  }
+  _lastLiveUp=BS._liveUp;
+},5000);
 
 
 async function doUpdate(){
@@ -1231,13 +1240,9 @@ async function _bScan(){
   // 0. Aktif açık işlem varsa sinyal aramayı atla
   // Sadece endDate geçmemiş open trade'ler yeni emri engeller
   // Sadece endDate geçmemiş open trade'ler yeni emri engeller
-  var _nowMs = Date.now();
   var openTrade=BS.trades.find(function(t){
     if(t.status!=='open') return false;
-    if(!t.endDate) return false;
-    var _ed=new Date(t.endDate);
-    if(isNaN(_ed)) return false;
-    return _nowMs < _ed.getTime() - 30000;
+    return !isTradeMarketExpired(t); // market süresi dolmamış olanlar
   });
 
   // HEDGE KONTROLÜ: Açık trade varsa FVG tam ters mi?
@@ -1445,13 +1450,9 @@ async function _bScan(){
     }
   }
   // Sadece endDate geçmemiş open trade'ler yeni emri engeller
-  var _now3=Date.now();
   var openTrades=BS.trades.filter(function(t){
     if(t.status!=='open') return false;
-    if(!t.endDate) return false;
-    var _ed3=new Date(t.endDate);
-    if(isNaN(_ed3)) return false;
-    return _now3 < _ed3.getTime();
+    return !isTradeMarketExpired(t);
   });
   if(openTrades.length>0){
     var existingTrade=openTrades[0];
@@ -1501,13 +1502,13 @@ async function _bScan(){
   var askDisplay = useAsk ? (useAsk*100).toFixed(1)+'%' : '? (mid kullanılıyor)';
   lg('bLog','Fiyat: mid='+(rawPrice*100).toFixed(1)+'% liveMid='+(liveMid*100).toFixed(1)+'% ask='+askDisplay+' → emir='+(price*100).toFixed(1)+'%','i');
   var tokenId=dir==='UP'?(m.up_token||''):(m.down_token||'');
-  // Polymarket API min 5 kontrat şartı koyuyor
-  // Size = max(5, bet/price) — ama maliyet bahisi çok aşmasın
-  var size2=Math.max(5, Math.round(BS.bet/price));
-  var actualCost=(size2*price).toFixed(2);
-  lg('bLog','Size='+size2+' Maliyet=$'+actualCost,'i');
-  // Bakiye kontrolü: min 5 kontrat zorunlu olduğu için maliyet bahisten yüksek olabilir, max 2x kabul et
-  if(parseFloat(actualCost)>BS.bet*2){lg('bLog','Maliyet çok yüksek ($'+actualCost+' > $'+(BS.bet*2).toFixed(2)+'), bahisi artır veya fiyat bekle.','w');return;}
+  // Maliyet: bakiyenin %BS.betPct'i VEYA minimum BS.bet — hangisi büyükse
+  var _pctBet = _curBalForTrade > 0 ? +(_curBalForTrade * (BS.betPct||5) / 100).toFixed(2) : 0;
+  var _effectiveBet = Math.max(BS.bet||2.5, _pctBet);
+  var size2=Math.max(5, Math.round(_effectiveBet/price));
+  var actualCost=+(size2*price).toFixed(2);
+  lg('bLog','Bakiye=$'+_curBalForTrade.toFixed(2)+' | %'+(BS.betPct||5)+'=$'+_pctBet.toFixed(2)+' | Min=$'+(BS.bet||2.5).toFixed(2)+' | Efektif=$'+actualCost,'i');
+  if(actualCost>_effectiveBet*2){lg('bLog','Maliyet çok yüksek ($'+actualCost+' > $'+(_effectiveBet*2).toFixed(2)+'), geçildi.','w');return;}
 
   lg('bLog','SİNYAL: '+dir+' | FVG Gap='+fvg.pct.toFixed(3)+'% | Poly='+(price*100).toFixed(1)+'%','s');
 
@@ -1797,6 +1798,36 @@ function setBFilter(f){
   _setBtnActive('flt_','flt_'+f);
   bRender(); bStats(); updatePnlChart();
 }
+// Trade'in market süresi dolmuş mu?
+// endDate varsa onu kullan, yoksa dateISO'dan 5dk slot hesapla
+function isTradeMarketExpired(t){
+  var now = Date.now();
+  // 1. endDate varsa kullan
+  if(t.endDate){
+    var ed = new Date(t.endDate);
+    if(!isNaN(ed)) return now >= ed.getTime();
+  }
+  // 2. dateISO varsa: açılış zamanının 5dk slotunu bul, o slot + 5dk = bitiş
+  if(t.dateISO){
+    var d = new Date(t.dateISO);
+    if(!isNaN(d)){
+      var slotMs = Math.floor(d.getTime() / 300000) * 300000; // 5dk slot başı
+      var slotEnd = slotMs + 300000; // slot sonu
+      return now >= slotEnd;
+    }
+  }
+  // 3. time varsa: bugün o saatten 5dk sonrası
+  if(t.time){
+    var parts = t.time.split(':');
+    if(parts.length >= 2){
+      var d2 = new Date();
+      d2.setHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2]||0), 0);
+      return now >= d2.getTime() + 300000; // 5dk sonra
+    }
+  }
+  return false; // bilemiyoruz, aktif say
+}
+
 function bRender(){
   var b=document.getElementById('b_tb');
   var trades=bFilteredTrades();
@@ -1804,18 +1835,9 @@ function bRender(){
   // 1. Aktif: endDate geçmemiş → yeni emri engeller (sarı)
   // 2. Süresi dolmuş ama sonuçlanmamış: endDate geçmiş → yeni emri engellemez (gri)
   // 3. Kesinleşmiş: win/loss (ayrı tabloda)
-  var now=Date.now();
   var allOpenTrades=BS.trades.filter(function(t){return t.status==='open';});
-  var activeTrade=allOpenTrades.find(function(t){
-    if(!t.endDate) return true;
-    var ed=new Date(t.endDate); if(isNaN(ed)) return true;
-    return now < ed.getTime();
-  });
-  var expiredTrade=allOpenTrades.find(function(t){
-    if(!t.endDate) return false;
-    var ed=new Date(t.endDate); if(isNaN(ed)) return false;
-    return now >= ed.getTime();
-  });
+  var activeTrade=allOpenTrades.find(function(t){ return !isTradeMarketExpired(t); });
+  var expiredTrade=allOpenTrades.find(function(t){ return isTradeMarketExpired(t); });
   var bar=document.getElementById('open_trade_bar');
   var info=document.getElementById('open_trade_info');
   if(bar && info){
@@ -1986,7 +2008,8 @@ function bToggle(){
 }
 
 function bStart(){
-  BS.bet=parseFloat(document.getElementById('b_bet').value)||1;
+  BS.bet=parseFloat(document.getElementById('b_bet').value)||2.5;
+  BS.betPct=parseFloat(document.getElementById('b_bet_pct').value)||5;
   BS.maxPrice=parseFloat(document.getElementById('b_mp').value)||0.50;
   BS.minBalance=(parseFloat(document.getElementById('b_balance').value)||35)/100;
   BS.dry=document.getElementById('b_mod').value==='dry';
@@ -2344,9 +2367,8 @@ async function polySync(){
         // endDate geçmişse artık koruma yok — Poly Sync replace etsin
         var _oEndTs=0;
         try{ var _oEp=new Date(openTrade.endDate||''); if(!isNaN(_oEp)) _oEndTs=_oEp.getTime(); }catch(e){}
-        // endDate geçtiyse HEMEN replace et — artık koruma yok
-        // endDate geçmemişse koru (çift emir önleme)
-        if(_oEndTs > 0 && Date.now() >= _oEndTs){
+        // Market süresi dolmuşsa HEMEN replace et
+        if(isTradeMarketExpired(openTrade)){
           lg('bLog','ℹ️ Poly Sync: market süresi doldu, replace ediliyor.','w');
           BS.trades = polyTrades;
           // Güvenlik: replace sonrası süresi dolmuş open trade'leri temizle
