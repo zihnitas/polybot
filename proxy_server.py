@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.24.3"
+VERSION = "3.24.4"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -1706,10 +1706,26 @@ def update():
         if errors:
             return jsonify({'success': False, 'updated': updated, 'errors': errors})
 
+        # proxy_server.py güncellendiyse otomatik restart
+        if 'proxy_server.py' in updated:
+            def _restart():
+                import time as _t
+                _t.sleep(1.5)  # Yanıt gönderilsin
+                import sys, os
+                print("[UPDATE] Proxy yeniden başlatılıyor...")
+                os.execv(sys.executable, [sys.executable] + sys.argv)
+            threading.Thread(target=_restart, daemon=True).start()
+            return jsonify({
+                'success': True,
+                'updated': updated,
+                'message': 'Güncelleme tamamlandı! Proxy otomatik yeniden başlatılıyor...',
+                'auto_restart': True
+            })
+
         return jsonify({
             'success': True,
             'updated': updated,
-            'message': 'Güncelleme tamamlandı! Proxy yeniden başlatmanız gerekiyor (BASLAT.bat).'
+            'message': 'Dashboard güncellendi.'
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
