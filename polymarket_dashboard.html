@@ -9,92 +9,216 @@
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
-:root{--bg:#000508;--bg2:#0a1018;--bg3:#0f1a24;--border:#1e3040;--accent:#00eeff;--green:#00ff99;--red:#ff3355;--yellow:#ffdd00;--muted:#6a8a9a;--text:#e8f4ff;--white:#ffffff;}
-/* Yüksek kontrast mod — gün ışığı için */
-body{text-shadow:0 0 1px rgba(0,0,0,0.5);}
-.cv,.mn,.pt,.logo{filter:brightness(1.1);}
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Barlow:wght@400;600;700;800&display=swap');
+
+/* ── YÜK SEK KONTRAST TEMA — gün ışığı optimizasyonu ── */
+:root{
+  --bg:#000d14;
+  --bg2:#011520;
+  --bg3:#01202e;
+  --border:#0a3550;
+  --border2:#0d4060;
+  --accent:#00f0ff;
+  --accent2:#00c8ff;
+  --green:#00ff88;
+  --green2:#00cc66;
+  --red:#ff2244;
+  --red2:#cc1133;
+  --yellow:#ffe600;
+  --yellow2:#ccb800;
+  --muted:#4a7a99;
+  --muted2:#5a8aaa;
+  --text:#cce8ff;
+  --text2:#aad4f0;
+  --white:#ffffff;
+  --shadow:0 4px 20px rgba(0,0,0,0.8);
+}
+
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Space Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-.wrap{max-width:1440px;margin:0 auto;padding:20px;position:relative;z-index:1;}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
-.logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);}
+body{
+  font-family:'JetBrains Mono',monospace;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+  /* Arka plan doku — gün ışığında görünürlük */
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(0,200,255,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(0,255,136,0.03) 0%, transparent 60%);
+}
+/* Grid desen */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,240,255,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,240,255,0.03) 1px,transparent 1px);
+  background-size:32px 32px;
+  pointer-events:none;z-index:0;
+}
+
+/* ── LAYOUT ── */
+.wrap{max-width:1600px;margin:0 auto;padding:10px 14px;position:relative;z-index:1;}
+
+/* ── HEADER ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;padding-bottom:8px;
+  border-bottom:1px solid var(--border2);
+}
+.logo{font-family:'Barlow',sans-serif;font-size:20px;font-weight:800;color:var(--white);letter-spacing:2px;}
 .logo span{color:var(--accent);}
-.hdr-right{display:flex;gap:10px;align-items:center;}
-.badge{display:flex;align-items:center;gap:7px;font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg2);}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;}
-.dot.dry{background:var(--yellow);box-shadow:0 0 8px var(--yellow);}
-.dot.off{background:var(--red);box-shadow:0 0 8px var(--red);animation:none;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.tabs{display:flex;gap:2px;margin-bottom:16px;border-bottom:1px solid var(--border);}
-.tab{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:9px 18px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:all .2s;}
+.hdr-right{display:flex;gap:8px;align-items:center;}
+.badge{
+  display:flex;align-items:center;gap:6px;font-size:10px;
+  padding:4px 10px;border-radius:16px;
+  border:1px solid var(--border2);background:var(--bg2);
+  color:var(--text2);font-weight:600;
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2s infinite;}
+.dot.dry{background:var(--yellow);box-shadow:0 0 10px var(--yellow);}
+.dot.off{background:var(--red);box-shadow:0 0 10px var(--red);animation:none;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 10px currentColor}50%{opacity:.5;box-shadow:0 0 4px currentColor}}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:0;margin-bottom:10px;border-bottom:2px solid var(--border2);}
+.tab{
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;
+  padding:8px 20px;background:transparent;border:none;
+  border-bottom:3px solid transparent;margin-bottom:-2px;
+  color:var(--muted2);cursor:pointer;transition:all .15s;
+}
 .tab:hover{color:var(--text);}
-.tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);background:rgba(0,240,255,0.04);}
 .pane{display:none;}.pane.on{display:block;}
-.sbar{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:10px;margin-bottom:16px;padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;}
-.si label{display:block;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
-.si input,.si select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--accent);font-family:'Space Mono',monospace;font-size:13px;padding:6px 9px;outline:none;transition:border-color .2s;}
-.si input:focus,.si select:focus{border-color:var(--accent);}
-.btn{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;padding:8px 14px;border-radius:4px;border:none;cursor:pointer;transition:all .2s;text-transform:uppercase;}
-.btn-a{background:var(--accent);color:var(--bg);}.btn-a:hover{background:#00b8d9;transform:translateY(-1px);}
-.btn-r{background:transparent;border:1px solid var(--red);color:var(--red);}.btn-r:hover{background:var(--red);color:var(--bg);}
-.grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px;}
-.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px;}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;position:relative;overflow:hidden;transition:border-color .2s;}
-.card:hover{border-color:var(--accent);}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:.4;}
+
+/* ── KONTROL BARI ── */
+.sbar{
+  display:grid;grid-template-columns:repeat(4,1fr) auto;
+  gap:8px;margin-bottom:10px;padding:10px 12px;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:6px;
+}
+.si label{display:block;font-size:9px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;}
+.si input,.si select{
+  width:100%;background:var(--bg3);
+  border:1px solid var(--border2);border-radius:4px;
+  color:var(--accent);font-family:'JetBrains Mono',monospace;
+  font-size:12px;padding:5px 8px;outline:none;transition:border-color .15s;
+}
+.si input:focus,.si select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,240,255,0.1);}
+
+/* ── BUTONLAR ── */
+.btn{
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
+  letter-spacing:1px;padding:7px 12px;border-radius:4px;border:none;
+  cursor:pointer;transition:all .15s;text-transform:uppercase;
+}
+.btn-a{background:var(--accent);color:var(--bg);box-shadow:0 0 12px rgba(0,240,255,0.3);}
+.btn-a:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:0 0 20px rgba(0,240,255,0.5);}
+.btn-r{background:transparent;border:1px solid var(--red);color:var(--red);}
+.btn-r:hover{background:var(--red);color:var(--white);}
+
+/* ── KARTLAR ── */
+.grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px;}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px;}
+.card{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:6px;
+  padding:8px 10px;position:relative;overflow:hidden;transition:border-color .15s,box-shadow .15s;
+}
+.card:hover{border-color:var(--accent2);box-shadow:0 0 12px rgba(0,240,255,0.1);}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:.6;}
 .card.g::before{background:var(--green);}
 .card.r::before{background:var(--red);}
 .card.y::before{background:var(--yellow);}
-.card.p::before{background:#a855f7;}
-.cl{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
-.cv{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--white);line-height:1;}
-.cv.g{color:var(--green);}.cv.r{color:var(--red);}.cv.y{color:var(--yellow);}
-.cs{font-size:10px;color:var(--muted);margin-top:3px;}
-.mg{display:grid;grid-template-columns:1fr 320px;gap:10px;}
-.bg{display:grid;grid-template-columns:1fr 320px;gap:10px;}
-.panel{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-.ph{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg3);}
-.pt{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--white);letter-spacing:1px;text-transform:uppercase;}
-.cb{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--muted);}
+.card.p::before{background:#aa55ff;}
+.cl{font-size:9px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.cv{font-family:'Barlow',sans-serif;font-size:18px;font-weight:800;color:var(--white);line-height:1;}
+.cv.g{color:var(--green);text-shadow:0 0 12px rgba(0,255,136,0.4);}
+.cv.r{color:var(--red);text-shadow:0 0 12px rgba(255,34,68,0.4);}
+.cv.y{color:var(--yellow);text-shadow:0 0 12px rgba(255,230,0,0.4);}
+.cs{font-size:10px;color:var(--muted2);margin-top:2px;}
+
+/* ── ANA LAYOUT — sol geniş, sağ log dar ── */
+.mg{display:grid;grid-template-columns:1fr 300px;gap:8px;}
+.bg{display:grid;grid-template-columns:1fr 300px;gap:8px;}
+
+/* ── PANEL ── */
+.panel{background:var(--bg2);border:1px solid var(--border2);border-radius:6px;overflow:hidden;}
+.ph{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;
+  padding:8px 12px;border-bottom:1px solid var(--border2);background:var(--bg3);
+}
+.pt{font-family:'Barlow',sans-serif;font-size:11px;font-weight:700;color:var(--white);letter-spacing:2px;text-transform:uppercase;}
+.cb{font-size:9px;padding:2px 6px;border-radius:8px;background:var(--bg);border:1px solid var(--border2);color:var(--muted2);}
+
+/* ── TABLO ── */
 table{width:100%;border-collapse:collapse;}
-th{font-size:9px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;padding:8px 11px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg3);}
-td{padding:8px 11px;font-size:12px;border-bottom:1px solid rgba(37,53,69,.6);vertical-align:middle;color:var(--text);}
-tr:hover td{background:rgba(0,212,255,.04);}
-.mn{color:var(--white);font-size:11px;font-weight:600;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.stag{font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:.5px;text-transform:uppercase;font-weight:700;}
-.td{background:rgba(0,212,255,.15);color:var(--accent);}
-.tu{background:rgba(255,215,0,.15);color:var(--yellow);}
-.ts{background:rgba(0,255,136,.15);color:var(--green);}
-.tb{background:rgba(255,68,102,.15);color:var(--red);}
-.sy{color:var(--green);font-weight:700;}.sn{color:var(--red);font-weight:700;}
+th{
+  font-size:9px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;
+  padding:6px 10px;text-align:left;border-bottom:1px solid var(--border2);
+  background:var(--bg3);white-space:nowrap;
+}
+td{
+  padding:6px 10px;font-size:11px;
+  border-bottom:1px solid rgba(10,53,80,.5);
+  vertical-align:middle;color:var(--text);
+}
+tr:hover td{background:rgba(0,240,255,0.03);}
+.mn{color:var(--white);font-size:11px;font-weight:600;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ── ETIKETLER ── */
+.stag{font-size:8px;padding:2px 5px;border-radius:3px;letter-spacing:.5px;text-transform:uppercase;font-weight:700;}
+.td{background:rgba(0,240,255,.12);color:var(--accent);}
+.tu{background:rgba(255,230,0,.12);color:var(--yellow);}
+.ts{background:rgba(0,255,136,.12);color:var(--green);}
+.tb{background:rgba(255,34,68,.12);color:var(--red);}
+.sy{color:var(--green);font-weight:700;text-shadow:0 0 8px rgba(0,255,136,0.3);}
+.sn{color:var(--red);font-weight:700;text-shadow:0 0 8px rgba(255,34,68,0.3);}
 .wn{color:var(--green);}.ls{color:var(--red);}
+
+/* ── LOG ── */
 .lp{display:flex;flex-direction:column;}
-.lc{padding:10px;overflow-y:auto;max-height:460px;font-size:11px;line-height:1.7;overflow-x:hidden;word-break:break-word;}
-.le{padding:3px 8px;border-radius:3px;margin-bottom:2px;animation:fi .3s ease;}
-@keyframes fi{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-.li{color:#9ab8cc;}
-.ls2{color:var(--accent);background:rgba(0,212,255,.07);}
-.lo{color:#00ff99;background:rgba(0,255,136,.07);}
-.le2{color:#ff6680;background:rgba(255,68,102,.07);}
-.lw{color:var(--yellow);background:rgba(255,215,0,.07);}
-.lt{color:var(--muted);margin-right:5px;}
-.rb{padding:10px 14px;border-top:1px solid var(--border);background:var(--bg3);}
-.rl{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;}
-.rbg{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.lc{
+  padding:8px;overflow-y:auto;
+  max-height:calc(100vh - 420px);min-height:200px;
+  font-size:10px;line-height:1.6;overflow-x:hidden;word-break:break-word;
+}
+.le{padding:2px 6px;border-radius:2px;margin-bottom:1px;animation:fi .2s ease;}
+@keyframes fi{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.li{color:var(--muted2);}
+.ls2{color:var(--accent);background:rgba(0,240,255,0.06);}
+.lo{color:var(--green);background:rgba(0,255,136,0.06);}
+.le2{color:var(--red);background:rgba(255,34,68,0.06);}
+.lw{color:var(--yellow);background:rgba(255,230,0,0.06);}
+.lt{color:var(--muted);margin-right:4px;font-size:9px;}
+
+/* ── PROGRESS BARS ── */
+.rb{padding:8px 12px;border-top:1px solid var(--border2);background:var(--bg3);}
+.rl{display:flex;justify-content:space-between;font-size:9px;color:var(--muted2);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;}
+.rbg{height:3px;background:var(--border2);border-radius:2px;overflow:hidden;}
 .rbf{height:100%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));border-radius:2px;transition:width .5s ease;}
-.pb{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:3px;}
+.pb{height:2px;background:var(--border2);border-radius:2px;overflow:hidden;margin-top:3px;}
 .pbf{height:100%;border-radius:2px;transition:width .5s,background .5s;}
-.mib{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:14px;align-items:center;}
-.mil label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px;}
+
+/* ── MARKEt INFO BAR ── */
+.mib{
+  display:grid;grid-template-columns:1fr 1fr 1fr auto;
+  gap:8px;padding:10px 12px;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:6px;margin-bottom:10px;align-items:center;
+}
+.mil label{font-size:9px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:2px;}
 .mil span{font-size:13px;color:var(--white);font-weight:700;}
-.prbb{height:6px;background:var(--border);border-radius:3px;overflow:hidden;display:flex;margin-top:5px;}
+.prbb{height:5px;background:var(--border2);border-radius:3px;overflow:hidden;display:flex;margin-top:4px;}
 .pru{height:100%;background:var(--green);transition:width .5s;}
 .prd{height:100%;background:var(--red);transition:width .5s;}
-.es{text-align:center;padding:36px;color:var(--muted);font-size:12px;}
-.es div{font-size:24px;margin-bottom:6px;}
-@media(max-width:1100px){.mg,.bg{grid-template-columns:1fr}.grid6,.grid5{grid-template-columns:repeat(3,1fr)}}
+
+/* ── BOŞ DURUM ── */
+.es{text-align:center;padding:30px;color:var(--muted2);font-size:11px;}
+.es div{font-size:20px;margin-bottom:6px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1200px){.mg,.bg{grid-template-columns:1fr}.grid6{grid-template-columns:repeat(3,1fr)}.grid5{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:768px){.grid6,.grid5{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -105,7 +229,7 @@ tr:hover td{background:rgba(0,212,255,.04);}
   <div class="hdr-right">
     <div class="badge" id="balBadge" style="color:var(--green);font-weight:700">BAKİYE: $—</div>
     <div class="badge"><div class="dot dry" id="sDot"></div><span id="sTxt">DEMO</span></div>
-    <button id="updateBtn" onclick="doUpdate()" style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:5px 12px;border-radius:20px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;letter-spacing:1px;transition:all .2s" onmouseover="this.style.background='var(--accent)';this.style.color='var(--bg)'" onmouseout="this.style.background='transparent';this.style.color='var(--accent)'">⬆ GÜNCELLE</button>
+    <button id="updateBtn" onclick="doUpdate()" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:5px 12px;border-radius:20px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;letter-spacing:1px;transition:all .2s" onmouseover="this.style.background='var(--accent)';this.style.color='var(--bg)'" onmouseout="this.style.background='transparent';this.style.color='var(--accent)'">⬆ GÜNCELLE</button>
     <span id="clk" style="font-size:11px;color:var(--muted)"></span>
   </div>
 </header>
@@ -115,29 +239,29 @@ tr:hover td{background:rgba(0,212,255,.04);}
 <div id="portfolio_bar" style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:8px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap;">
   <div style="display:flex;align-items:center;gap:5px;padding-right:10px;border-right:1px solid var(--border)">
     <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Bakiye</span>
-    <span id="pf_balance" style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--green)">$—</span>
+    <span id="pf_balance" style="font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--green)">$—</span>
     <a id="pf_scan_link" href="https://polygonscan.com/address/0xf32F6e0F09EEc34ebac499e704f57728fAB52853" target="_blank" style="color:var(--accent);text-decoration:none;font-size:9px">🔗</a>
   </div>
   <div style="display:flex;align-items:center;gap:5px;padding-right:10px;border-right:1px solid var(--border)">
     <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">BTC P&L</span>
-    <span id="pf_btc" style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--muted)">$0.00</span>
+    <span id="pf_btc" style="font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--muted)">$0.00</span>
   </div>
   <div style="display:flex;align-items:center;gap:5px;padding-right:10px;border-right:1px solid var(--border)">
     <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Maliyet</span>
-    <span id="pf_cost" style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--muted)">$0.00</span>
+    <span id="pf_cost" style="font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--muted)">$0.00</span>
   </div>
   <div style="display:flex;align-items:center;gap:5px;padding-right:10px;border-right:1px solid var(--border)">
     <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Redeem</span>
-    <span id="pf_redeem" style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--muted)">$0.00</span>
+    <span id="pf_redeem" style="font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--muted)">$0.00</span>
   </div>
   <div style="display:flex;align-items:center;gap:5px;padding-right:10px;border-right:1px solid var(--border)">
     <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Deposit</span>
-    <span id="pf_deposit" style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--yellow)">$0.00</span>
+    <span id="pf_deposit" style="font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--yellow)">$0.00</span>
     <input type="number" id="deposit_input" placeholder="$" step="0.01" style="width:45px;background:transparent;border:1px solid var(--border);color:var(--yellow);padding:1px 4px;border-radius:3px;font-size:9px;text-align:center" onchange="saveDeposit(this.value)">
   </div>
   <div style="display:flex;align-items:center;gap:5px;margin-left:auto">
     <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Net P&L</span>
-    <span id="pf_total" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--white)">$0.00</span>
+    <span id="pf_total" style="font-family:'Barlow',sans-serif;font-size:18px;font-weight:800;color:var(--white)">$0.00</span>
     <span id="pf_wr" style="font-size:9px;color:var(--muted)">0 işlem</span>
   </div>
 </div>
@@ -161,7 +285,7 @@ tr:hover td{background:rgba(0,212,255,.04);}
     <div style="display:flex;flex-direction:column;gap:4px;align-items:stretch;justify-content:center">
       <div style="display:flex;gap:4px">
         <input id="transfer_amount" type="number" placeholder="Tutar" min="0.1" step="0.1"
-          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--accent);font-family:'Space Mono',monospace;font-size:11px;padding:4px 6px;outline:none;min-width:0">
+          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 6px;outline:none;min-width:0">
         <button onclick="doWithdraw()" style="font-size:9px;padding:4px 8px;background:transparent;border:1px solid var(--yellow);color:var(--yellow);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;white-space:nowrap">⬇ ÇEK</button>
         <button onclick="doDeposit()" style="font-size:9px;padding:4px 8px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;white-space:nowrap">⬆ YATIR</button>
       </div>
@@ -262,7 +386,7 @@ tr:hover td{background:rgba(0,212,255,.04);}
         <div class="panel">
           <div class="ph"><span class="pt">BTC/USDT 1 Dakika</span><span style="font-size:10px;color:var(--muted)">Son 30 mum • Sinyal</span></div>
           <div style="position:relative;padding:8px 8px 4px 8px">
-            <div id="fvg_signal_bar" style="display:none;position:absolute;top:12px;right:12px;z-index:10;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'Space Mono',monospace;pointer-events:none"></div>
+            <div id="fvg_signal_bar" style="display:none;position:absolute;top:12px;right:12px;z-index:10;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;pointer-events:none"></div>
             <canvas id="btcChart" height="180"></canvas>
           </div>
         </div>
@@ -323,10 +447,18 @@ tr:hover td{background:rgba(0,212,255,.04);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.20.0'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.21.1'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
+// Herhangi bir tarihi TR saatine çevir
+function toTR(dateStr){
+  try{
+    var d=new Date(dateStr);
+    if(isNaN(d)) return dateStr||'—';
+    return d.toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul',hour:'2-digit',minute:'2-digit'});
+  }catch(e){return dateStr||'—';}
+}
 setInterval(function(){ document.getElementById('clk').textContent=ts(); },1000);
 document.getElementById('clk').textContent=ts();
 
@@ -1039,12 +1171,13 @@ async function bScan(){
 async function _bScan(){
   // 0. Aktif açık işlem varsa sinyal aramayı atla
   // Sadece endDate geçmemiş open trade'ler yeni emri engeller
+  // Sadece endDate geçmemiş open trade'ler yeni emri engeller
   var openTrade=BS.trades.find(function(t){
     if(t.status!=='open') return false;
-    if(!t.endDate) return true; // endDate yoksa engelle (güvenli)
-    var _ed=new Date(t.endDate); 
-    if(isNaN(_ed)) return true;
-    return Date.now() < _ed.getTime(); // endDate geçmemişse engelle
+    if(!t.endDate) return false; // endDate yoksa engelleme (güvenli taraf değişti)
+    var _ed=new Date(t.endDate);
+    if(isNaN(_ed)) return false;
+    return Date.now() < _ed.getTime(); // sadece aktif market engeller
   });
   if(openTrade){
     // EndDate çok geçmişse (10dk+) trade takılı kalmış — zorla sil, yeni işlem açılsın
@@ -1638,8 +1771,9 @@ function bRender(){
         +'<button onclick="bManualMark('+t.id+',\'loss\')" style="font-size:10px;padding:2px 8px;background:rgba(255,68,102,.2);border:1px solid var(--red);color:var(--red);border-radius:3px;cursor:pointer;font-family:inherit;font-weight:700">L</button>'
         +'</div>'
       :'<div style="font-size:11px;font-weight:700;color:'+sc+'">'+ps+'</div>';
+    var trTime = t.time || (t.dateISO ? toTR(t.dateISO) : '—');
     return '<tr style="background:'+(t.status==='open'?'rgba(255,215,0,.03)':t.status==='win'?'rgba(0,255,136,.02)':'rgba(255,68,102,.02)')+'">'
-      +'<td style="color:var(--muted);font-size:10px;white-space:nowrap">'+t.time+'</td>'
+      +'<td style="color:var(--muted2);font-size:10px;white-space:nowrap">'+trTime+'</td>'
       +'<td><span class="'+dc+'" style="font-size:13px;font-weight:800">'+dry+t.dir+'</span></td>'
       +'<td style="font-size:11px;color:var(--text)">'+(t.price*100).toFixed(1)+'%</td>'
       +'<td style="font-size:11px;color:var(--white);font-weight:700">$'+(t.size&&t.price?(t.size*t.price).toFixed(2):t.bet.toFixed(2))+'</td>'
@@ -2111,17 +2245,22 @@ async function polySync(){
         // endDate geçmişse artık koruma yok — Poly Sync replace etsin
         var _oEndTs=0;
         try{ var _oEp=new Date(openTrade.endDate||''); if(!isNaN(_oEp)) _oEndTs=_oEp.getTime(); }catch(e){}
-        var _oExpired = _oEndTs>0 && Date.now() > _oEndTs + 1*60*1000; // endDate+1dk
-        if(_oExpired){
-          lg('bLog','ℹ️ Poly Sync: açık trade süresi doldu, replace ediliyor.','w');
+        // endDate geçtiyse HEMEN replace et — artık koruma yok
+        // endDate geçmemişse koru (çift emir önleme)
+        if(_oEndTs > 0 && Date.now() >= _oEndTs){
+          lg('bLog','ℹ️ Poly Sync: market süresi doldu, replace ediliyor.','w');
+          BS.trades = polyTrades;
+        } else if(_oEndTs === 0){
+          // endDate bilinmiyor — replace et
           BS.trades = polyTrades;
         } else {
-          // Henüz resolve olmamış — open trade'i koru, kapalıları güncelle
+          // Market henüz aktif — open trade'i koru, kapalıları güncelle
           var closedFromPoly = polyTrades.filter(function(t){ return t.status!=='open'; });
           BS.trades = [openTrade].concat(closedFromPoly.filter(function(t){
             return t.mid !== openTrade.mid;
           }));
-          lg('bLog','ℹ️ Poly Sync: açık trade korundu ('+openTrade.dir+' '+openTrade.market.substring(0,25)+')','i');
+          var remainSec = Math.round((_oEndTs - Date.now())/1000);
+          lg('bLog','ℹ️ Poly Sync: açık trade korundu — '+remainSec+'sn kaldı ('+openTrade.dir+')','i');
         }
       }
     } else {
