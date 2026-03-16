@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.8'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.10'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1435,14 +1435,19 @@ async function _bScan(){
   if(mid&&mid===BS.lastMid){
     var midTrade=BS.trades.find(function(t){return t.mid===mid&&t.status==='open';});
     if(midTrade){
-      // Hedge kontrolü: ters yönde açık trade var mı?
-      var hedgeOk = tDir && midTrade.dir !== tDir &&
-        !BS.trades.find(function(t){return t.status==='open'&&t.mid===mid&&t.dir===tDir;});
-      if(hedgeOk){
-        lg('bLog','🔄 HEDGE: lastMid eşleşiyor ama yön ters — hedge devam.','i');
-        // lastMid'i sıfırlama, hedge iznini ver
+      // Market süresi dolmuşsa lastMid'i sıfırla — yeni market gibi davran
+      if(isTradeMarketExpired(midTrade)){
+        lg('bLog','lastMid: market süresi dolmuş — sıfırlanıyor, yeni emir açılabilir.','w');
+        BS.lastMid=null;
       } else {
-        lg('bLog','Bu piyasaya zaten girildi.','i');return;
+        // Hedge kontrolü: ters yönde açık trade var mı?
+        var hedgeOk = tDir && midTrade.dir !== tDir &&
+          !BS.trades.find(function(t){return t.status==='open'&&t.mid===mid&&t.dir===tDir;});
+        if(hedgeOk){
+          lg('bLog','🔄 HEDGE: lastMid eşleşiyor ama yön ters — hedge devam.','i');
+        } else {
+          lg('bLog','Bu piyasaya zaten girildi.','i');return;
+        }
       }
     } else {
       lg('bLog','lastMid set ama trade kaydı yok — sıfırlanıyor.','w');
@@ -1502,17 +1507,8 @@ async function _bScan(){
   var askDisplay = useAsk ? (useAsk*100).toFixed(1)+'%' : '? (mid kullanılıyor)';
   lg('bLog','Fiyat: mid='+(rawPrice*100).toFixed(1)+'% liveMid='+(liveMid*100).toFixed(1)+'% ask='+askDisplay+' → emir='+(price*100).toFixed(1)+'%','i');
   var tokenId=dir==='UP'?(m.up_token||''):(m.down_token||'');
-  // Maliyet: bakiyenin %BS.betPct'i VEYA minimum BS.bet — hangisi büyükse
-  var _pctBet = _curBalForTrade > 0 ? +(_curBalForTrade * (BS.betPct||5) / 100).toFixed(2) : 0;
-  var _effectiveBet = Math.max(BS.bet||2.5, _pctBet);
-  var size2=Math.max(5, Math.round(_effectiveBet/price));
-  var actualCost=+(size2*price).toFixed(2);
-  lg('bLog','Bakiye=$'+_curBalForTrade.toFixed(2)+' | %'+(BS.betPct||5)+'=$'+_pctBet.toFixed(2)+' | Min=$'+(BS.bet||2.5).toFixed(2)+' | Efektif=$'+actualCost,'i');
-  if(actualCost>_effectiveBet*2){lg('bLog','Maliyet çok yüksek ($'+actualCost+' > $'+(_effectiveBet*2).toFixed(2)+'), geçildi.','w');return;}
 
-  lg('bLog','SİNYAL: '+dir+' | FVG Gap='+fvg.pct.toFixed(3)+'% | Poly='+(price*100).toFixed(1)+'%','s');
-
-  // Bakiyeyi emir AÇILMADAN ÖNCE çek — match kontrolünde kullanılacak
+  // Bakiyeyi ÖNCE çek — hem maliyet hesabında hem match kontrolünde kullanılacak
   var _curBalForTrade = 0;
   try{
     var _preBalR=await fetch(PROXY+'/balance');
@@ -1520,6 +1516,16 @@ async function _bScan(){
     _curBalForTrade=parseFloat(_preBalD.proxy||0);
     lg('bLog','💰 Emir öncesi bakiye: $'+_curBalForTrade.toFixed(2),'i');
   }catch(e){}
+
+  // Maliyet: bakiyenin %BS.betPct'i VEYA minimum BS.bet — hangisi büyükse
+  var _pctBet = _curBalForTrade > 0 ? +(_curBalForTrade * (BS.betPct||5) / 100).toFixed(2) : 0;
+  var _effectiveBet = Math.max(BS.bet||2.5, _pctBet);
+  var size2=Math.max(5, Math.round(_effectiveBet/price));
+  var actualCost=+(size2*price).toFixed(2);
+  lg('bLog','%'+(BS.betPct||5)+'=$'+_pctBet.toFixed(2)+' | Min=$'+(BS.bet||2.5).toFixed(2)+' | Efektif=$'+actualCost,'i');
+  if(actualCost>_effectiveBet*2){lg('bLog','Maliyet çok yüksek ($'+actualCost+' > $'+(_effectiveBet*2).toFixed(2)+'), geçildi.','w');return;}
+
+  lg('bLog','SİNYAL: '+dir+' | FVG Gap='+fvg.pct.toFixed(3)+'% | Poly='+(price*100).toFixed(1)+'%','s');
 
   // Emir gönder
   var orderOk=false;
