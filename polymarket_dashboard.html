@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.28'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.29'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -636,10 +636,11 @@ function _connectLiveWs(){
     _liveWs=ws;
     ws.onopen=function(){
       _liveWsRetry=0;
-      // UP ve DOWN token'larına subscribe ol
+      // Polymarket WS market channel — assets_ids ile subscribe
       ws.send(JSON.stringify({
         auth:{},
-        markets:[_liveTokens.up, _liveTokens.down]
+        type:'Market',
+        assets_ids:[_liveTokens.up, _liveTokens.down]
       }));
     };
     ws.onmessage=function(e){
@@ -647,13 +648,18 @@ function _connectLiveWs(){
         var msgs=JSON.parse(e.data);
         if(!Array.isArray(msgs)) msgs=[msgs];
         msgs.forEach(function(msg){
-          // price_change eventi: {asset_id, price}
-          if(!msg.price) return;
-          var price=parseFloat(msg.price);
-          if(price<=0.01||price>=0.99) return;
-          if(msg.asset_id===_liveTokens.up){
+          var assetId=msg.asset_id||msg.market;
+          // price_change veya book eventi — midpoint hesapla
+          var price=null;
+          if(msg.price) price=parseFloat(msg.price);
+          else if(msg.asks&&msg.bids&&msg.asks.length&&msg.bids.length){
+            // book: midpoint = (best_bid + best_ask) / 2
+            price=(parseFloat(msg.bids[0].price)+parseFloat(msg.asks[0].price))/2;
+          }
+          if(!price||price<=0.01||price>=0.99) return;
+          if(assetId===_liveTokens.up){
             _updateLiveUI(price, parseFloat((1-price).toFixed(4)));
-          } else if(msg.asset_id===_liveTokens.down){
+          } else if(assetId===_liveTokens.down){
             _updateLiveUI(parseFloat((1-price).toFixed(4)), price);
           }
         });
