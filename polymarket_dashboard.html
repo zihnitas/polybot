@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.12'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.13'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -607,14 +607,15 @@ fetchBalance();
 var _livePriceTmr=null;
 var _currentTab='poly'; // sw() fonksiyonu bunu günceller
 var _liveTokens={up:'', down:''}; // Aktif market token ID'leri — taramada set edilir
+var _liveFreezeTs=0; // Son başarılı canlı fiyat güncellemesi
 
 async function _fetchLivePrice(){
   try{
     if(_currentTab!=='btc') return;
+    // Her zaman token ID ile CLOB'dan çek — en hızlı ve en güncel
     if(_liveTokens.up && _liveTokens.down){
-      // Token ID varsa direkt CLOB — timeout 2sn
       var controller = new AbortController();
-      var tId = setTimeout(function(){ controller.abort(); }, 2000);
+      var tId = setTimeout(function(){ controller.abort(); }, 1500);
       try{
         var [rU, rD] = await Promise.all([
           fetch('https://clob.polymarket.com/midpoint?token_id='+_liveTokens.up,{cache:'no-store',signal:controller.signal}),
@@ -624,50 +625,52 @@ async function _fetchLivePrice(){
         var mU=await rU.json(), mD=await rD.json();
         var up=parseFloat(mU.mid||0), dn=parseFloat(mD.mid||0);
         if(up>0.01 && up<0.99){
-          var uEl=document.getElementById('b_up'), dEl=document.getElementById('b_dn');
-          var uBar=document.getElementById('b_ub'), dBar=document.getElementById('b_db');
-          if(uEl) uEl.textContent='UP '+(up*100).toFixed(1)+'¢';
-          if(dEl) dEl.textContent='DOWN '+(dn>0.01?dn*100:(1-up)*100).toFixed(1)+'¢';
-          if(uBar) uBar.style.width=(up*100)+'%';
-          if(dBar) dBar.style.width=((dn>0.01?dn:(1-up))*100)+'%';
-          BS._liveUp=up; BS._liveDn=dn>0.01?dn:+(1-up).toFixed(4);
+          _updateLiveUI(up, dn>0.01?dn:+(1-up).toFixed(4));
+          _liveFreezeTs=Date.now(); // son başarılı güncelleme
+        } else {
+          // Geçersiz değer — token eski kalmış, sıfırla
+          _liveTokens.up=''; _liveTokens.down='';
         }
-      } catch(fetchErr){
+      } catch(e){
         clearTimeout(tId);
-        // Hata/timeout durumunda token sıfırla — yeniden fallback çeksin
         _liveTokens.up=''; _liveTokens.down='';
       }
     } else {
-      // Token ID yoksa proxy'den çek
+      // Token yoksa proxy'den çek + token'ları güncelle
       var slot5=Math.floor(Date.now()/1000/300)*300;
-      var r=await fetchTimeout(PROXY+'/btc_market?slot='+slot5,3000);
-      var d=await r.json();
-      if(d&&d.market){
-        var up=parseFloat(d.market.up_price||0.5), dn=parseFloat(d.market.down_price||0.5);
-        var uEl=document.getElementById('b_up'), dEl=document.getElementById('b_dn');
-        var uBar=document.getElementById('b_ub'), dBar=document.getElementById('b_db');
-        if(uEl) uEl.textContent='UP '+(up*100).toFixed(1)+'¢';
-        if(dEl) dEl.textContent='DOWN '+(dn*100).toFixed(1)+'¢';
-        if(uBar) uBar.style.width=(up*100)+'%';
-        if(dBar) dBar.style.width=(dn*100)+'%';
-        if(d.market.up_token) _liveTokens.up=d.market.up_token;
-        if(d.market.down_token) _liveTokens.down=d.market.down_token;
-      }
+      try{
+        var r=await fetchTimeout(PROXY+'/btc_market?slot='+slot5, 2000);
+        var d=await r.json();
+        if(d&&d.market){
+          var up=parseFloat(d.market.up_price||0.5), dn=parseFloat(d.market.down_price||0.5);
+          _updateLiveUI(up, dn);
+          if(d.market.up_token) _liveTokens.up=d.market.up_token;
+          if(d.market.down_token) _liveTokens.down=d.market.down_token;
+          _liveFreezeTs=Date.now();
+        }
+      }catch(e){}
     }
-  }catch(e){
-    // Genel hata — token sıfırla
-    _liveTokens.up=''; _liveTokens.down='';
-  }
+  }catch(e){}
+}
+
+function _updateLiveUI(up, dn){
+  var uEl=document.getElementById('b_up'), dEl=document.getElementById('b_dn');
+  var uBar=document.getElementById('b_ub'), dBar=document.getElementById('b_db');
+  if(uEl) uEl.textContent='UP '+(up*100).toFixed(1)+'¢';
+  if(dEl) dEl.textContent='DOWN '+(dn*100).toFixed(1)+'¢';
+  if(uBar) uBar.style.width=(up*100)+'%';
+  if(dBar) dBar.style.width=(dn*100)+'%';
+  BS._liveUp=up; BS._liveDn=dn;
 }
 // Canlı fiyat — 800ms'de bir güncelle, donma koruması ile
 _livePriceTmr=setInterval(_fetchLivePrice, 800);
-// Donma koruması: 5sn'de fiyat değişmediyse token ID sıfırla
-var _lastLiveUp=0, _liveFreezeCheck=setInterval(function(){
-  if(BS._liveUp && BS._liveUp===_lastLiveUp){
-    _liveTokens.up=''; _liveTokens.down=''; // token sıfırla, yeniden çeksin
+// Donma koruması: 4sn'de güncelleme yoksa token sıfırla
+var _liveFreezeCheck=setInterval(function(){
+  if(_liveFreezeTs > 0 && Date.now() - _liveFreezeTs > 4000){
+    _liveTokens.up=''; _liveTokens.down='';
+    _liveFreezeTs=Date.now(); // sıfırlama zamanını sıfırla (döngüye girmesin)
   }
-  _lastLiveUp=BS._liveUp;
-},5000);
+},2000);
 
 
 async function doUpdate(){
@@ -1053,13 +1056,17 @@ function initCharts(){
       plugins:{legend:{labels:{color:'#4a6070',font:{size:10}}}},
       scales:{
         x:{type:'time',
-          time:{unit:'minute',stepSize:5,displayFormats:{minute:'HH:mm'}},
+          time:{unit:'minute',stepSize:5,displayFormats:{minute:'HH:mm'},round:'minute'},
           adapters:{date:{locale:'tr'}},
-          ticks:{color:'#3a5060',font:{size:9},maxTicksLimit:6,source:'auto'},
-          grid:{color:function(ctx){
-            // Her 5dk'da hafif çizgi
-            return 'rgba(20,40,55,0.35)';
-          },lineWidth:1,borderDash:[3,5]}
+          ticks:{color:'#3a5060',font:{size:9},maxTicksLimit:6,source:'auto',
+            stepSize:5,
+            callback:function(val){
+              // Sadece 5'in katı dakikaları göster
+              var d=new Date(val); var m=d.getMinutes();
+              return m%5===0?d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Istanbul'}):null;
+            }
+          },
+          grid:{color:'rgba(15,35,50,0.4)',lineWidth:1,borderDash:[3,6]}
         },
         y:{position:'right',ticks:{color:'#3a5060',font:{size:9}},grid:{display:false}}
       }
@@ -1078,10 +1085,16 @@ function initCharts(){
       plugins:{legend:{labels:{color:'#4a6070',font:{size:10}}}},
       scales:{
         x:{type:'time',
-          time:{unit:'minute',stepSize:5,displayFormats:{minute:'HH:mm'}},
+          time:{unit:'minute',stepSize:5,displayFormats:{minute:'HH:mm'},round:'minute'},
           adapters:{date:{locale:'tr'}},
-          ticks:{color:'#3a5060',font:{size:9},maxTicksLimit:8,source:'auto'},
-          grid:{color:'rgba(18,36,50,0.4)',lineWidth:1,borderDash:[3,5]}
+          ticks:{color:'#3a5060',font:{size:9},maxTicksLimit:8,source:'auto',
+            stepSize:5,
+            callback:function(val){
+              var d=new Date(val); var m=d.getMinutes();
+              return m%5===0?d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Istanbul'}):null;
+            }
+          },
+          grid:{color:'rgba(15,35,50,0.4)',lineWidth:1,borderDash:[3,6]}
         },
         y:{position:'right',ticks:{color:'#3a5060',font:{size:9}},grid:{display:false}}
       }
