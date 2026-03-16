@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.0'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.1'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -677,7 +677,7 @@ async function doUpdate(){
       lg('bLog','✅ Güncelleme tamam: '+d.updated.join(', '),'o');
       lg('bLog','Proxy yeniden başlatılıyor, sayfa 5sn sonra yenilenecek...','w');
       if(btn) btn.textContent='✅ Yeniden başlatılıyor...';
-      setTimeout(function(){ location.reload(); }, 5000);
+      setTimeout(function(){ location.href=location.href.split("?")[0]+"?v="+Date.now(); }, 5000);
     } else {
       lg('bLog','❌ Güncelleme hata: '+(d.errors||[d.error]).join(', '),'e');
       if(btn){ btn.textContent='❌ Hata'; setTimeout(function(){ btn.textContent='⬆ GÜNCELLE'; btn.disabled=false; },3000); }

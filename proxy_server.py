@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.22.0"
+VERSION = "3.23.0"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -650,13 +650,18 @@ def sol_result():   return _get_result(request.args.get('market_id',''))
 @app.route('/')
 @app.route('/dashboard')
 def serve_dashboard():
-    """Dashboard HTML dosyasını serve et."""
+    """Dashboard HTML dosyasını serve et — cache'siz."""
     import os
-    # Proxy ile aynı klasörde ara
+    from flask import make_response
     script_dir = os.path.dirname(os.path.abspath(__file__))
     html_path = os.path.join(script_dir, 'polymarket_dashboard.html')
     if os.path.exists(html_path):
-        return send_file(html_path)
+        resp = make_response(send_file(html_path))
+        # Tarayıcı cache'ini tamamen devre dışı bırak
+        resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        resp.headers['Pragma'] = 'no-cache'
+        resp.headers['Expires'] = '0'
+        return resp
     return "Dashboard bulunamadı: polymarket_dashboard.html proxy ile aynı klasörde olmalı.", 404
 
 @app.route('/positions')
