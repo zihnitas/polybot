@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.24.2"
+VERSION = "3.24.3"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -345,8 +345,20 @@ def _get_market(symbol, slot):
         up_tok   = token_ids[up_idx]   if len(token_ids)>up_idx   else ''
         down_tok = token_ids[down_idx] if len(token_ids)>down_idx else ''
 
-        # Gamma outcomePrices kullan — CLOB midpoint override kaldırıldı (stale değer sorunu)
-        # outcomePrices zaten Gamma'dan geliyor ve Polymarket sitesiyle aynı
+        # Gamma outcomePrices — Polymarket sitesiyle aynı kaynak
+        up_price  = float(prices[up_idx])   if len(prices) > up_idx   else 0.5
+        down_price = float(prices[down_idx]) if len(prices) > down_idx else 0.5
+
+        # CLOB midpoint ile güncelle — daha güncel olabilir
+        try:
+            if up_tok:
+                mp_r = requests.get(f"{CLOB}/midpoint", params={'token_id': up_tok}, timeout=3)
+                if mp_r.ok:
+                    up_mid = float(mp_r.json().get('mid', 0))
+                    if 0.01 < up_mid < 0.99:
+                        up_price   = up_mid
+                        down_price = round(1.0 - up_mid, 4)
+        except: pass
 
         # CLOB best ask
         up_ask = up_price; down_ask = down_price
@@ -607,8 +619,20 @@ def btc15_market():
         up_tok   = token_ids[up_idx]   if len(token_ids)>up_idx   else ''
         down_tok = token_ids[down_idx] if len(token_ids)>down_idx else ''
 
-        # Gamma outcomePrices kullan — CLOB midpoint override kaldırıldı (stale değer sorunu)
-        # outcomePrices zaten Gamma'dan geliyor ve Polymarket sitesiyle aynı
+        # Gamma outcomePrices — Polymarket sitesiyle aynı kaynak
+        up_price  = float(prices[up_idx])   if len(prices) > up_idx   else 0.5
+        down_price = float(prices[down_idx]) if len(prices) > down_idx else 0.5
+
+        # CLOB midpoint ile güncelle — daha güncel olabilir
+        try:
+            if up_tok:
+                mp_r = requests.get(f"{CLOB}/midpoint", params={'token_id': up_tok}, timeout=3)
+                if mp_r.ok:
+                    up_mid = float(mp_r.json().get('mid', 0))
+                    if 0.01 < up_mid < 0.99:
+                        up_price   = up_mid
+                        down_price = round(1.0 - up_mid, 4)
+        except: pass
 
         # CLOB best ask
         up_ask = up_price; down_ask = down_price
