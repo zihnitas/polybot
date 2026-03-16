@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.29'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.31'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -623,8 +623,11 @@ function _updateLiveUI(up, dn){
 }
 
 function _connectLiveWs(){
-  // Token ID yoksa bekle
-  if(!_liveTokens.up || !_liveTokens.down) return;
+  // Token yoksa Gamma fallback başlat — tarama sonrası WS bağlanır
+  if(!_liveTokens.up || !_liveTokens.down){
+    _startGammaFallback();
+    return;
+  }
   var slot5=Math.floor(Date.now()/1000/300)*300;
   // Aynı slot'a zaten bağlıysa yeniden bağlanma
   if(_liveWs && _liveWs.readyState===WebSocket.OPEN && _liveWsSlot===slot5) return;
@@ -693,14 +696,17 @@ function _startGammaFallback(){
       var d=await r.json();
       var up=parseFloat(d.up||0),dn=parseFloat(d.dn||0);
       if(up>0.01&&up<0.99) _updateLiveUI(up,dn>0.01?dn:+(1-up).toFixed(4));
-      // WS yeniden dene
+      // Token set olduysa WS'e geç
       if(_liveTokens.up && (!_liveWs||_liveWs.readyState!==WebSocket.OPEN)){
         clearInterval(_gammaFallbackTmr); _gammaFallbackTmr=null;
         _liveWsRetry=0; _connectLiveWs();
       }
     }catch(e){}
-  },3000);
+  },2000); // 2sn'de bir — WS yokken daha sık
 }
+
+// Sayfa yüklenince hemen Gamma fallback başlat
+_startGammaFallback();
 
 // Token set edildiğinde WS bağla
 function _onTokensSet(){
@@ -2646,6 +2652,39 @@ initCharts();
 fetchBalance();
 loadDeposit();
 setTimeout(updatePortfolio,2000);
+
+// Sayfa yüklenince proxy'deki bugünkü log dosyasını ekrana yükle
+(async function(){
+  try{
+    var today=new Date().toISOString().slice(0,10);
+    var r=await fetch(PROXY+'/log_download?date='+today);
+    if(!r.ok) return;
+    var text=await r.text();
+    var lines=text.split('\n').filter(function(l){return l.trim();});
+    // Son 200 satırı göster (en eskiden en yeniye)
+    var show=lines.slice(-200);
+    var el=document.getElementById('bLog');
+    if(!el) return;
+    // Her satırı parse edip ekle — en yeni en üstte
+    show.reverse().forEach(function(line){
+      // Format: "HH:MM:SS [LEVEL] [source] message"
+      var m=line.match(/^(\d{2}:\d{2}:\d{2})\s+\[(\w+\s*)\]\s+\[(\w+)\]\s+(.*)$/);
+      if(!m) return;
+      var time=m[1], level=m[2].trim(), msg=m[4];
+      var t='i';
+      if(level==='OK')   t='o';
+      else if(level==='ERR') t='e';
+      else if(level==='WARN') t='w';
+      else if(level==='SIG') t='s';
+      var d=document.createElement('div');
+      var cls={'i':'li','s':'ls2','o':'lo','e':'le2','w':'lw'}[t]||'li';
+      d.className='le '+cls;
+      d.innerHTML='<span class="lt">'+time+'</span>'+msg;
+      el.appendChild(d); // En yeni üstte olduğu için eski logları alta ekle
+    });
+    el.scrollTop=0;
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
