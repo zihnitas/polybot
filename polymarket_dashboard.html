@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.13'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.14'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -636,16 +636,15 @@ async function _fetchLivePrice(){
         _liveTokens.up=''; _liveTokens.down='';
       }
     } else {
-      // Token yoksa proxy'den çek + token'ları güncelle
+      // Token yoksa proxy'den market + token bilgisi çek
       var slot5=Math.floor(Date.now()/1000/300)*300;
       try{
-        var r=await fetchTimeout(PROXY+'/btc_market?slot='+slot5, 2000);
+        var r=await fetchTimeout(PROXY+'/btc_market?slot='+slot5+'&_nc='+Date.now(), 2000);
         var d=await r.json();
         if(d&&d.market){
-          var up=parseFloat(d.market.up_price||0.5), dn=parseFloat(d.market.down_price||0.5);
-          _updateLiveUI(up, dn);
           if(d.market.up_token) _liveTokens.up=d.market.up_token;
           if(d.market.down_token) _liveTokens.down=d.market.down_token;
+          // Token aldık, bir sonraki çevrimde CLOB'dan çekilecek
           _liveFreezeTs=Date.now();
         }
       }catch(e){}
@@ -1524,22 +1523,27 @@ async function _bScan(){
     lg('bLog','Ask fiyatı çok yüksek ('+(bestAsk*100).toFixed(1)+'% > max '+(BS.maxPrice*100).toFixed(0)+'%) — geçildi.','w');
     return;
   }
-  // Emir fiyatı: ask geçerliyse ask, yoksa mid — artık +2% yok (match hızlı)
-  // Canlı mid varsa onu kullan (daha güncel)
-  // liveMid sanity check — eski market token'ı ise mid ile çok farklı olur, reddet
-  var _rawLive = (dir==='UP') ? (BS._liveUp||0) : (BS._liveDn||0);
-  var _liveDiff = Math.abs(_rawLive - rawPrice);
-  var liveMid = (_rawLive > 0.01 && _rawLive < 0.99 && _liveDiff < 0.20)
-              ? _rawLive  // geçerli: max %20 fark
-              : rawPrice; // fallback: proxy'den gelen mid
+  // Emir fiyatı: emir anında CLOB'dan anlık fiyat çek — gecikme olmasın
+  var liveMid = rawPrice; // fallback
+  var tokenId_live = dir==='UP' ? (m.up_token||_liveTokens.up||'') : (m.down_token||_liveTokens.down||'');
+  if(tokenId_live){
+    try{
+      var _liveR = await fetchTimeout('https://clob.polymarket.com/midpoint?token_id='+tokenId_live+'&_='+Date.now(), 1500);
+      var _liveD = await _liveR.json();
+      var _freshMid = parseFloat(_liveD.mid||0);
+      if(_freshMid > 0.01 && _freshMid < 0.99){
+        liveMid = _freshMid;
+        // Anlık değeri BS'ye de yaz
+        if(dir==='UP'){ BS._liveUp=_freshMid; } else { BS._liveDn=_freshMid; }
+      }
+    }catch(e){ /* fallback rawPrice */ }
+  }
   var useAsk = (bestAsk && bestAsk > 0.01 && bestAsk < 0.99) ? bestAsk : null;
-  // Ask varsa ask fiyatından gir, yoksa canlı mid
   var price = useAsk ? Math.min(BS.maxPrice, Math.round(useAsk*100)/100)
                      : Math.min(BS.maxPrice, Math.round(liveMid*100)/100);
-  // CLOB min tick 0.01 — en az 0.01'e yuvarla
   price = Math.max(0.01, Math.round(price*100)/100);
   var askDisplay = useAsk ? (useAsk*100).toFixed(1)+'%' : '? (mid kullanılıyor)';
-  lg('bLog','Fiyat: mid='+(rawPrice*100).toFixed(1)+'% liveMid='+(liveMid*100).toFixed(1)+'% ask='+askDisplay+' → emir='+(price*100).toFixed(1)+'%','i');
+  lg('bLog','Fiyat: proxy='+(rawPrice*100).toFixed(1)+'% anlık='+(liveMid*100).toFixed(1)+'% ask='+askDisplay+' → emir='+(price*100).toFixed(1)+'%','i');
   var tokenId=dir==='UP'?(m.up_token||''):(m.down_token||'');
 
   // Bakiyeyi ÖNCE çek — hem maliyet hesabında hem match kontrolünde kullanılacak
