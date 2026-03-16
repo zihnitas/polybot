@@ -456,14 +456,14 @@ tr:hover td{background:rgba(0,240,255,0.03);}
         <div style="overflow-x:auto;overflow-y:auto;max-height:220px">
           <table style="width:100%;table-layout:auto">
             <thead><tr>
-              <th style="white-space:nowrap;width:70px">Saat</th>
-              <th style="width:50px">Yön</th>
-              <th style="width:60px">Fiyat</th>
-              <th style="width:70px">Maliyet</th>
+              <th style="white-space:nowrap;width:65px">Saat</th>
+              <th style="width:45px">Yön</th>
+              <th style="width:55px">Fiyat</th>
+              <th style="width:65px">Maliyet</th>
+              <th style="width:70px;text-align:right">P&L</th>
               <th>Sonuç</th>
-              <th style="width:80px;text-align:right">P&L</th>
             </tr></thead>
-          <tbody id="b_tb"><tr><td colspan="6"><div class="es"><div>--</div>Henüz işlem yok</div></td></tr></tbody></table>
+          <tbody id="b_tb"><tr><td colspan="5"><div class="es"><div>--</div>Henüz işlem yok</div></td></tr></tbody></table>
         </div>
       </div>
       <!-- Log -->
@@ -487,7 +487,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.5'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.6'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1234,14 +1234,20 @@ async function _bScan(){
   var _nowMs = Date.now();
   var openTrade=BS.trades.find(function(t){
     if(t.status!=='open') return false;
-    // endDate yoksa veya geçemiyorsak engelleme
     if(!t.endDate) return false;
     var _ed=new Date(t.endDate);
     if(isNaN(_ed)) return false;
-    // endDate en az 30sn ileride olmalı
     return _nowMs < _ed.getTime() - 30000;
   });
+
+  // HEDGE KONTROLÜ: Açık trade varsa FVG tam ters mi?
+  // Eğer ters ise aynı markette ikinci emir açılabilir
   if(openTrade){
+    // FVG sinyalini hesapla — ilerledeki koddan çekme, burada erken hesapla
+    // _hedgeCheck flag'i ile işaretle — aşağıda FVG hesabı yapılınca kontrol edilecek
+    BS._hedgeCandidate = openTrade;
+  }
+  if(openTrade && !BS._doHedge){
     // EndDate çok geçmişse (10dk+) trade takılı kalmış — zorla sil, yeni işlem açılsın
     var _endTs=0;
     try{ var _ep=new Date(openTrade.endDate||''); if(!isNaN(_ep)) _endTs=_ep.getTime(); }catch(e){}
@@ -1422,10 +1428,17 @@ async function _bScan(){
   if(!mdata||!mdata.market){return;}
 
   if(mid&&mid===BS.lastMid){
-    // lastMid set ama trade kaydı var mı kontrol et
     var midTrade=BS.trades.find(function(t){return t.mid===mid&&t.status==='open';});
     if(midTrade){
-      lg('bLog','Bu piyasaya zaten girildi.','i');return;
+      // Hedge kontrolü: ters yönde açık trade var mı?
+      var hedgeOk = tDir && midTrade.dir !== tDir &&
+        !BS.trades.find(function(t){return t.status==='open'&&t.mid===mid&&t.dir===tDir;});
+      if(hedgeOk){
+        lg('bLog','🔄 HEDGE: lastMid eşleşiyor ama yön ters — hedge devam.','i');
+        // lastMid'i sıfırlama, hedge iznini ver
+      } else {
+        lg('bLog','Bu piyasaya zaten girildi.','i');return;
+      }
     } else {
       lg('bLog','lastMid set ama trade kaydı yok — sıfırlanıyor.','w');
       BS.lastMid=null;
@@ -1435,12 +1448,28 @@ async function _bScan(){
   var _now3=Date.now();
   var openTrades=BS.trades.filter(function(t){
     if(t.status!=='open') return false;
-    if(!t.endDate) return false; // endDate yoksa engelleme
+    if(!t.endDate) return false;
     var _ed3=new Date(t.endDate);
     if(isNaN(_ed3)) return false;
-    return _now3 < _ed3.getTime(); // sadece aktif market
+    return _now3 < _ed3.getTime();
   });
-  if(openTrades.length>0){lg('bLog','Açık işlem var, yeni emir açılmıyor: '+openTrades[0].market.substring(0,30),'w');return;}
+  if(openTrades.length>0){
+    var existingTrade=openTrades[0];
+    // HEDGE KONTROLÜ: Aynı markette FVG tam ters mi?
+    // Eğer ters ise ikinci emir (hedge) açılabilir
+    var sameMarket = mid && existingTrade.mid === mid;
+    var reverseDir = tDir && existingTrade.dir && tDir !== existingTrade.dir;
+    var noHedgeYet = !BS.trades.find(function(t){
+      return t.status==='open' && t.mid===mid && t.dir===tDir;
+    });
+    if(sameMarket && reverseDir && noHedgeYet){
+      lg('bLog','🔄 HEDGE: FVG ters döndü ('+existingTrade.dir+'→'+tDir+') — aynı markette '+tDir+' emri açılıyor!','w');
+      // Hedge iznini ver, devam et
+    } else {
+      lg('bLog','Açık işlem var, yeni emir açılmıyor: '+existingTrade.market.substring(0,30),'w');
+      return;
+    }
+  }
   if(!m.accepting_orders&&!m.acceptingOrders){lg('bLog','Piyasa emir kabul etmiyor.','w');return;}
   // Market dengeli değilse girme — bir taraf 40%'dan düşükse piyasa uç noktada demek
   if(up < (BS.minBalance||0.40) || dn < (BS.minBalance||0.40)){lg('bLog','Market dengesiz (UP='+(up*100).toFixed(0)+'¢ DOWN='+(dn*100).toFixed(0)+'¢) — geçildi.','w');return;}
@@ -1849,12 +1878,9 @@ function bRender(){
       +'<td style="color:var(--muted2);font-size:10px;white-space:nowrap">'+trTime+'</td>'
       +'<td><span class="'+dc+'" style="font-size:13px;font-weight:800">'+dry+t.dir+'</span></td>'
       +'<td style="font-size:11px;color:var(--text)">'+(t.price*100).toFixed(1)+'%</td>'
-      +'<td style="font-size:11px;color:var(--white);font-weight:700">$'+(t.size&&t.price?(t.size*t.price).toFixed(2):t.bet.toFixed(2))+'</td>'
-      +'<td style="font-size:11px;font-weight:700;color:'+(t.status==='win'&&t.pnl>0?'var(--green)':'var(--muted)')+'">'+
-        (t.status==='win'&&t.pnl>0?'$'+(t.bet+t.pnl).toFixed(2):t.status==='win'?'⏳':t.status==='loss'?'—':'—')+'</td>'
-      +'<td><span style="color:'+sc+';font-size:10px;font-weight:700">'+sl+'</span>'+mkt+'</td>'
-      +'<td style="font-size:11px;font-weight:700;color:'+(t.status==='win'?'var(--green)':'var(--red)')+'">'+(t.status==='win'?'+$'+t.pnl.toFixed(2):t.status==='loss'?'-$'+Math.abs(t.pnl||t.bet).toFixed(2):'—')+'</td>'
+      +'<td style="font-size:11px;color:var(--white);font-weight:700">$'+t.bet.toFixed(2)+'</td>'
       +'<td style="text-align:right;white-space:nowrap">'+wlBtns+'</td>'
+      +'<td><span style="color:'+sc+';font-size:10px;font-weight:700">'+sl+'</span>'+mkt+'</td>'
       +'</tr>';
   }).join('');
 }
