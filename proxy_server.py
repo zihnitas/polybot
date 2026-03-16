@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.23.0"
+VERSION = "3.24.0"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -1675,19 +1675,10 @@ def update():
         if errors:
             return jsonify({'success': False, 'updated': updated, 'errors': errors})
 
-        # Proxy'yi yeniden başlat (2sn sonra — response dönebilsin)
-        def _restart():
-            import time as _t, sys, subprocess
-            _t.sleep(2)
-            print("[UPDATE] Yeniden başlatılıyor...")
-            subprocess.Popen([sys.executable] + sys.argv)
-            os._exit(0)
-        threading.Thread(target=_restart, daemon=True).start()
-
         return jsonify({
             'success': True,
             'updated': updated,
-            'message': 'Güncelleme tamamlandı, proxy yeniden başlatılıyor...'
+            'message': 'Güncelleme tamamlandı! Proxy yeniden başlatmanız gerekiyor (BASLAT.bat).'
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -1699,17 +1690,30 @@ def check_update():
         r = requests.get(f"{GITHUB_RAW}/proxy_server.py", timeout=10)
         if not r.ok:
             return jsonify({'success': False, 'error': f'HTTP {r.status_code}'})
-        # Versiyon satırını bul
-        gh_version = None
+        gh_proxy_version = None
         for line in r.text.split('\n'):
             if line.strip().startswith('VERSION'):
-                gh_version = line.split('"')[1] if '"' in line else line.split("'")[1]
+                try: gh_proxy_version = line.split('"')[1]
+                except: 
+                    try: gh_proxy_version = line.split("'")[1]
+                    except: pass
                 break
+        # Dashboard versiyonunu da çek
+        r2 = requests.get(f"{GITHUB_RAW}/polymarket_dashboard.html", timeout=10)
+        gh_dash_version = None
+        if r2.ok:
+            for line in r2.text.split('\n'):
+                if 'DASHBOARD_VERSION' in line:
+                    try: gh_dash_version = line.split("'")[1]
+                    except: pass
+                    break
+        proxy_up_to_date = VERSION == gh_proxy_version
         return jsonify({
             'success': True,
             'current': VERSION,
-            'latest': gh_version,
-            'up_to_date': VERSION == gh_version
+            'latest': gh_proxy_version,
+            'dash_latest': gh_dash_version,
+            'up_to_date': proxy_up_to_date
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
