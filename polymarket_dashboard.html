@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.19'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.21'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -608,6 +608,7 @@ var _livePriceTmr=null;
 var _currentTab='poly'; // sw() fonksiyonu bunu günceller
 var _liveTokens={up:'', down:''}; // Aktif market token ID'leri — taramada set edilir
 var _liveFreezeTs=0; // Son başarılı canlı fiyat güncellemesi
+var _liveFailCount=0; // Üst üste başarısız sayısı
 
 async function _fetchLivePrice(){
   try{
@@ -629,12 +630,18 @@ async function _fetchLivePrice(){
         if(up>0.01 && up<0.99){
           _updateLiveUI(up, dn>0.01?dn:+(1-up).toFixed(4));
           _liveFreezeTs=Date.now();
+          _liveFailCount=0; // başarılı — sayacı sıfırla
         } else {
-          _liveTokens.up=''; _liveTokens.down='';
+          _liveFailCount++;
+          if(_liveFailCount>=3){ // 3 kez üst üste başarısız → token sıfırla
+            _liveTokens.up=''; _liveTokens.down='';
+            _liveFailCount=0;
+          }
         }
       }catch(e){
         clearTimeout(tId);
-        _liveTokens.up=''; _liveTokens.down='';
+        _liveFailCount++;
+        if(_liveFailCount>=3){ _liveTokens.up=''; _liveTokens.down=''; _liveFailCount=0; }
       }
     } else {
       // Token yoksa BS'den al
@@ -656,6 +663,13 @@ async function _fetchLivePrice(){
 }
 
 function _updateLiveUI(up, dn){
+  // Sanity check: proxy'deki değerden %25'ten fazla sapma varsa reddet (yanlış token)
+  var proxyUp = BS._proxyUp || 0;
+  if(proxyUp > 0.01 && Math.abs(up - proxyUp) > 0.25){
+    _liveFailCount++;
+    if(_liveFailCount >= 3){ _liveTokens.up=''; _liveTokens.down=''; _liveFailCount=0; }
+    return; // reddet
+  }
   var uEl=document.getElementById('b_up'), dEl=document.getElementById('b_dn');
   var uBar=document.getElementById('b_ub'), dBar=document.getElementById('b_db');
   if(uEl) uEl.textContent='UP '+(up*100).toFixed(1)+'¢';
@@ -663,16 +677,18 @@ function _updateLiveUI(up, dn){
   if(uBar) uBar.style.width=(up*100)+'%';
   if(dBar) dBar.style.width=(dn*100)+'%';
   BS._liveUp=up; BS._liveDn=dn;
+  _liveFailCount=0;
 }
 // Canlı fiyat — 800ms'de bir güncelle, donma koruması ile
 _livePriceTmr=setInterval(_fetchLivePrice, 1000);
-// Donma koruması: 4sn'de güncelleme yoksa token sıfırla
+// Donma koruması: 6sn'de güncelleme yoksa token sıfırla
 var _liveFreezeCheck=setInterval(function(){
-  if(_liveFreezeTs > 0 && Date.now() - _liveFreezeTs > 4000){
+  if(_liveFreezeTs > 0 && Date.now() - _liveFreezeTs > 6000){
     _liveTokens.up=''; _liveTokens.down='';
-    _liveFreezeTs=Date.now(); // sıfırlama zamanını sıfırla (döngüye girmesin)
+    _liveFailCount=0;
+    _liveFreezeTs=Date.now();
   }
-},2000);
+},3000);
 
 
 async function doUpdate(){
@@ -1384,6 +1400,7 @@ async function _bScan(){
     document.getElementById('b_dn').textContent='DOWN '+(dn*100).toFixed(1)+'¢';
     document.getElementById('b_ub').style.width=(up*100)+'%';
     document.getElementById('b_db').style.width=(dn*100)+'%';
+    BS._proxyUp=up; BS._proxyDn=dn; // proxy referans değeri
     lg('bLog','Piyasa: '+(m.title||'').substring(0,40),'i');
     lg('bLog','UP='+(up*100).toFixed(1)+'% DOWN='+(dn*100).toFixed(1)+'%','i');
     // Canlı fiyat ticker için token ID'leri kaydet
