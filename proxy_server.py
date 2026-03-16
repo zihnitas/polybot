@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.21.0"
+VERSION = "3.22.0"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -126,29 +126,36 @@ def _tr_time():
 _notified_redeems = set()  # Tekrar bildirim gitmesin
 
 def tg_notify_trade(direction, price, bet, status, pnl, market, bot='BTC5'):
-    """İşlem bildirimi."""
+    """Sadece kesinleşmiş işlem bildirimi — open status görmezden gel."""
+    if status == 'open':
+        return  # Match bildirimi gitmiyor
     bot_tag = f"[{bot}] "
     saat = _tr_time()
-    if status == 'open':
-        emoji = "⏳"
-        msg = f"{emoji} <b>{bot_tag}YENİ İŞLEM</b>\n"
-        msg += f"Yön: <b>{direction}</b> @ {price:.1%}\n"
-        msg += f"Maliyet: <b>${bet:.2f}</b>\n"
-        msg += f"Piyasa: {market[:40]}\n"
-        msg += f"🕐 {saat}"
-    elif status == 'win':
+    # Son bakiyeyi çek
+    bal_str = ""
+    try:
+        from web3 import Web3 as _W3
+        _w3 = _W3(_W3.HTTPProvider(RPC))
+        _usdc = _w3.eth.contract(address=USDC_ADDRESS, abi=USDC_ABI)
+        if PRIVATE_KEY:
+            _addr = _w3.eth.account.from_key(PRIVATE_KEY).address
+            _bal = _usdc.functions.balanceOf(_addr).call() / 1e6
+            bal_str = f"\n💵 Bakiye: <b>${_bal:.2f}</b>"
+    except: pass
+
+    if status == 'win':
         emoji = "✅"
         msg = f"{emoji} <b>{bot_tag}KAZANDI!</b>\n"
-        msg += f"Yön: <b>{direction}</b> | Maliyet: ${bet:.2f}\n"
+        msg += f"Yön: <b>{direction}</b> @ {price:.1%} | Maliyet: ${bet:.2f}\n"
         msg += f"Kâr: <b>+${pnl:.2f}</b> 🎉\n"
-        msg += f"Piyasa: {market[:40]}\n"
+        msg += f"Piyasa: {market[:40]}{bal_str}\n"
         msg += f"🕐 {saat}"
     else:
         emoji = "❌"
         msg = f"{emoji} <b>{bot_tag}KAYBETTİ</b>\n"
-        msg += f"Yön: <b>{direction}</b> | Maliyet: ${bet:.2f}\n"
+        msg += f"Yön: <b>{direction}</b> @ {price:.1%} | Maliyet: ${bet:.2f}\n"
         msg += f"Kayıp: <b>-${abs(pnl):.2f}</b>\n"
-        msg += f"Piyasa: {market[:40]}\n"
+        msg += f"Piyasa: {market[:40]}{bal_str}\n"
         msg += f"🕐 {saat}"
     threading.Thread(target=tg_send, args=(msg,), daemon=True).start()
 
