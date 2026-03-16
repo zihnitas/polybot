@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.24.1"
+VERSION = "3.24.2"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -345,16 +345,8 @@ def _get_market(symbol, slot):
         up_tok   = token_ids[up_idx]   if len(token_ids)>up_idx   else ''
         down_tok = token_ids[down_idx] if len(token_ids)>down_idx else ''
 
-        # CLOB'dan anlık midpoint çek
-        try:
-            if up_tok:
-                mp_r = requests.get(f"{CLOB}/midpoint", params={'token_id': up_tok}, timeout=3)
-                if mp_r.ok:
-                    up_mid = float(mp_r.json().get('mid', 0))
-                    if 0.01 < up_mid < 0.99:
-                        up_price   = up_mid
-                        down_price = round(1.0 - up_mid, 4)
-        except: pass
+        # Gamma outcomePrices kullan — CLOB midpoint override kaldırıldı (stale değer sorunu)
+        # outcomePrices zaten Gamma'dan geliyor ve Polymarket sitesiyle aynı
 
         # CLOB best ask
         up_ask = up_price; down_ask = down_price
@@ -567,25 +559,24 @@ def btc_market():   return _get_market('btc', request.args.get('slot',''))
 
 @app.route('/live_price')
 def live_price():
-    """Token ID ile anlık CLOB midpoint — cache yok, çok hızlı."""
-    up_tok = request.args.get('up','')
-    dn_tok = request.args.get('dn','')
-    if not up_tok and not dn_tok:
-        return jsonify({'error': 'token_id gerekli'}), 400
+    """Slot ile Gamma'dan anlık fiyat — Polymarket sitesiyle aynı kaynak."""
+    slot = request.args.get('slot','')
+    if not slot:
+        return jsonify({'error': 'slot gerekli'}), 400
     try:
-        results = {}
-        if up_tok:
-            r = requests.get(f"{CLOB}/midpoint", params={'token_id': up_tok}, timeout=2)
-            if r.ok:
-                results['up'] = float(r.json().get('mid', 0))
-        if dn_tok:
-            r2 = requests.get(f"{CLOB}/midpoint", params={'token_id': dn_tok}, timeout=2)
-            if r2.ok:
-                results['dn'] = float(r2.json().get('mid', 0))
-        # up+dn toplamı ~1 olmalı
-        if 'up' in results and 'dn' not in results:
-            results['dn'] = round(1.0 - results['up'], 4)
-        return jsonify(results)
+        slug = f"btc-updown-5m-{slot}"
+        resp = requests.get(f"{GAMMA}/events", params={'slug': slug}, timeout=5)
+        data = resp.json()
+        if not data:
+            return jsonify({'error': 'market bulunamadı'}), 404
+        m = data[0].get('markets', [{}])[0]
+        prices = json.loads(m.get('outcomePrices', '[0.5,0.5]'))
+        outcomes = json.loads(m.get('outcomes', '["Up","Down"]'))
+        up_idx = next((i for i,o in enumerate(outcomes) if o.lower()=='up'), 0)
+        dn_idx = next((i for i,o in enumerate(outcomes) if o.lower()=='down'), 1)
+        up = float(prices[up_idx]) if len(prices) > up_idx else 0.5
+        dn = float(prices[dn_idx]) if len(prices) > dn_idx else 0.5
+        return jsonify({'up': up, 'dn': dn, 'source': 'gamma'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -616,16 +607,8 @@ def btc15_market():
         up_tok   = token_ids[up_idx]   if len(token_ids)>up_idx   else ''
         down_tok = token_ids[down_idx] if len(token_ids)>down_idx else ''
 
-        # CLOB'dan anlık midpoint çek
-        try:
-            if up_tok:
-                mp_r = requests.get(f"{CLOB}/midpoint", params={'token_id': up_tok}, timeout=3)
-                if mp_r.ok:
-                    up_mid = float(mp_r.json().get('mid', 0))
-                    if 0.01 < up_mid < 0.99:
-                        up_price   = up_mid
-                        down_price = round(1.0 - up_mid, 4)
-        except: pass
+        # Gamma outcomePrices kullan — CLOB midpoint override kaldırıldı (stale değer sorunu)
+        # outcomePrices zaten Gamma'dan geliyor ve Polymarket sitesiyle aynı
 
         # CLOB best ask
         up_ask = up_price; down_ask = down_price
