@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.24.0"
+VERSION = "3.24.1"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -564,6 +564,30 @@ def sol_candles_1m():  return _klines('SOLUSDT','1m',30)
 # ── Polymarket market lookup ──────────────────
 @app.route('/btc_market')
 def btc_market():   return _get_market('btc', request.args.get('slot',''))
+
+@app.route('/live_price')
+def live_price():
+    """Token ID ile anlık CLOB midpoint — cache yok, çok hızlı."""
+    up_tok = request.args.get('up','')
+    dn_tok = request.args.get('dn','')
+    if not up_tok and not dn_tok:
+        return jsonify({'error': 'token_id gerekli'}), 400
+    try:
+        results = {}
+        if up_tok:
+            r = requests.get(f"{CLOB}/midpoint", params={'token_id': up_tok}, timeout=2)
+            if r.ok:
+                results['up'] = float(r.json().get('mid', 0))
+        if dn_tok:
+            r2 = requests.get(f"{CLOB}/midpoint", params={'token_id': dn_tok}, timeout=2)
+            if r2.ok:
+                results['dn'] = float(r2.json().get('mid', 0))
+        # up+dn toplamı ~1 olmalı
+        if 'up' in results and 'dn' not in results:
+            results['dn'] = round(1.0 - results['up'], 4)
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/btc15_market')
 def btc15_market():

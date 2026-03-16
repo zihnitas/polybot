@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.17'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.18'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -612,48 +612,38 @@ var _liveFreezeTs=0; // Son başarılı canlı fiyat güncellemesi
 async function _fetchLivePrice(){
   try{
     if(_currentTab!=='btc') return;
-    // Her zaman token ID ile CLOB'dan çek — en hızlı ve en güncel
     if(_liveTokens.up && _liveTokens.down){
-      var controller = new AbortController();
-      var tId = setTimeout(function(){ controller.abort(); }, 1500);
+      // Proxy üzerinden CLOB — tek istek, hızlı
       try{
-        var [rU, rD] = await Promise.all([
-          fetch('https://clob.polymarket.com/midpoint?token_id='+_liveTokens.up,{cache:'no-store',signal:controller.signal}),
-          fetch('https://clob.polymarket.com/midpoint?token_id='+_liveTokens.down,{cache:'no-store',signal:controller.signal})
-        ]);
-        clearTimeout(tId);
-        var mU=await rU.json(), mD=await rD.json();
-        var up=parseFloat(mU.mid||0), dn=parseFloat(mD.mid||0);
+        var r = await fetchTimeout(
+          PROXY+'/live_price?up='+_liveTokens.up+'&dn='+_liveTokens.down, 1500
+        );
+        var d = await r.json();
+        var up=parseFloat(d.up||0), dn=parseFloat(d.dn||0);
         if(up>0.01 && up<0.99){
           _updateLiveUI(up, dn>0.01?dn:+(1-up).toFixed(4));
-          _liveFreezeTs=Date.now(); // son başarılı güncelleme
+          _liveFreezeTs=Date.now();
         } else {
-          // Geçersiz değer — token eski kalmış, sıfırla
           _liveTokens.up=''; _liveTokens.down='';
         }
-      } catch(e){
-        clearTimeout(tId);
+      }catch(e){
         _liveTokens.up=''; _liveTokens.down='';
       }
     } else {
-      // Token yoksa — BS'deki token'ları kullan (tarama sırasında set edilir)
-      if(BS._liveTokenUp && BS._liveTokenDn){
-        _liveTokens.up = BS._liveTokenUp;
-        _liveTokens.down = BS._liveTokenDn;
-      }
-      // Hâlâ yoksa proxy'den çek
+      // Token yoksa BS'den al
+      if(BS._liveTokenUp){ _liveTokens.up=BS._liveTokenUp; _liveTokens.down=BS._liveTokenDn||''; }
+      // BS'de de yoksa proxy'den market çek
       if(!_liveTokens.up){
         var slot5=Math.floor(Date.now()/1000/300)*300;
         try{
-          var r=await fetchTimeout(PROXY+'/btc_market?slot='+slot5, 2000);
-          var d=await r.json();
-          if(d&&d.market){
-            if(d.market.up_token){ _liveTokens.up=d.market.up_token; BS._liveTokenUp=d.market.up_token; }
-            if(d.market.down_token){ _liveTokens.down=d.market.down_token; BS._liveTokenDn=d.market.down_token; }
+          var r2=await fetchTimeout(PROXY+'/btc_market?slot='+slot5, 2000);
+          var d2=await r2.json();
+          if(d2&&d2.market){
+            if(d2.market.up_token){ _liveTokens.up=d2.market.up_token; BS._liveTokenUp=d2.market.up_token; }
+            if(d2.market.down_token){ _liveTokens.down=d2.market.down_token; BS._liveTokenDn=d2.market.down_token; }
           }
         }catch(e){}
       }
-      _liveFreezeTs=Date.now()-3500; // bir sonraki çevrimde CLOB'dan çekilsin
     }
   }catch(e){}
 }
