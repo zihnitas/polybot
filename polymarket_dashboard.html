@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.16'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.17'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1275,45 +1275,27 @@ async function bScan(){
   try{ await _bScan(); }catch(e){ lg('bLog','TARAMA HATA: '+e.message,'e'); }
 }
 async function _bScan(){
-  // 0. Aktif açık işlem varsa sinyal aramayı atla
-  // Sadece endDate geçmemiş open trade'ler yeni emri engeller
-  // Sadece endDate geçmemiş open trade'ler yeni emri engeller
-  var openTrade=BS.trades.find(function(t){
+  // 0. Sadece süresi DOLMAMIŞ open trade yeni emri engeller
+  var activeBlockingTrade = BS.trades.find(function(t){
     if(t.status!=='open') return false;
-    return !isTradeMarketExpired(t); // market süresi dolmamış olanlar
+    return !isTradeMarketExpired(t);
   });
-
-  // HEDGE KONTROLÜ: Açık trade varsa FVG tam ters mi?
-  // Eğer ters ise aynı markette ikinci emir açılabilir
-  if(openTrade){
-    // FVG sinyalini hesapla — ilerledeki koddan çekme, burada erken hesapla
-    // _hedgeCheck flag'i ile işaretle — aşağıda FVG hesabı yapılınca kontrol edilecek
-    BS._hedgeCandidate = openTrade;
+  if(activeBlockingTrade){
+    return; // Aktif market var — bekle
   }
-  if(openTrade && !BS._doHedge){
-    // EndDate çok geçmişse (10dk+) trade takılı kalmış — zorla sil, yeni işlem açılsın
-    var _endTs=0;
-    try{ var _ep=new Date(openTrade.endDate||''); if(!isNaN(_ep)) _endTs=_ep.getTime(); }catch(e){}
-    // endDate geçtiyse hemen polySync tetikle — bCheckResult'tan bağımsız
-    if(_endTs>0 && Date.now() > _endTs){
-      // Her taramada polySync çağırma — sadece endDate sonrası ilk 3dk
-      var _sinceEnd = Date.now() - _endTs;
-      if(_sinceEnd < 3*60*1000){
-        // endDate geçeli 3dk'dan az — her taramada polySync zorla
-        lg('bLog','⏳ EndDate geçti ('+Math.round(_sinceEnd/1000)+'sn) — Poly Sync tetikleniyor...','i');
-        polySync();
-      } else {
-        // 3dk geçti hâlâ takılı — zorla temizle
-        lg('bLog','⚠️ Açık trade 3dk+ süresi dolmuş — zorla temizleniyor.','w');
-        BS.trades=BS.trades.filter(function(x){return x.id!==openTrade.id;});
-        BS.lastMid=null;
-        try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
-        bRender(); bStats();
-        setTimeout(polySync, 1000);
-      }
-      return;
-    } else {
-      return;
+  // Süresi dolmuş open trade'ler varsa 3dk+ geçmişse zorla temizle
+  var expiredOpens = BS.trades.filter(function(t){
+    return t.status==='open' && isTradeMarketExpired(t);
+  });
+  if(expiredOpens.length > 0){
+    var _expT = expiredOpens[0];
+    var _expEd = new Date(_expT.endDate||_expT.dateISO||'');
+    if(!isNaN(_expEd) && Date.now() - _expEd.getTime() > 3*60*1000){
+      lg('bLog','\u26a0\ufe0f S\u00fcres\u00fc dolmu\u015f trade 3dk+ \u2014 zorla temizleniyor.','w');
+      BS.trades = BS.trades.filter(function(x){ return x.id !== _expT.id; });
+      BS.lastMid = null;
+      try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+      bRender(); bStats();
     }
   }
 
@@ -1473,44 +1455,40 @@ async function _bScan(){
   if(mid&&mid===BS.lastMid){
     var midTrade=BS.trades.find(function(t){return t.mid===mid&&t.status==='open';});
     if(midTrade){
-      // Market süresi dolmuşsa lastMid'i sıfırla — yeni market gibi davran
       if(isTradeMarketExpired(midTrade)){
-        lg('bLog','lastMid: market süresi dolmuş — sıfırlanıyor, yeni emir açılabilir.','w');
+        // Süresi dolmuş — sıfırla
         BS.lastMid=null;
       } else {
-        // Hedge kontrolü: ters yönde açık trade var mı?
+        // Aktif market — hedge mi?
         var hedgeOk = tDir && midTrade.dir !== tDir &&
           !BS.trades.find(function(t){return t.status==='open'&&t.mid===mid&&t.dir===tDir;});
         if(hedgeOk){
-          lg('bLog','🔄 HEDGE: lastMid eşleşiyor ama yön ters — hedge devam.','i');
+          lg('bLog','\ud83d\udd04 HEDGE: lastMid ters y\u00f6n — hedge devam.','i');
         } else {
           lg('bLog','Bu piyasaya zaten girildi.','i');return;
         }
       }
     } else {
-      lg('bLog','lastMid set ama trade kaydı yok — sıfırlanıyor.','w');
       BS.lastMid=null;
     }
   }
   // Sadece endDate geçmemiş open trade'ler yeni emri engeller
-  var openTrades=BS.trades.filter(function(t){
-    if(t.status!=='open') return false;
-    return !isTradeMarketExpired(t);
+  // Aktif open trade kontrolü (hedge hariç)
+  var activeOpens = BS.trades.filter(function(t){
+    return t.status==='open' && !isTradeMarketExpired(t);
   });
-  if(openTrades.length>0){
-    var existingTrade=openTrades[0];
-    // HEDGE KONTROLÜ: Aynı markette FVG tam ters mi?
-    // Eğer ters ise ikinci emir (hedge) açılabilir
+  if(activeOpens.length>0){
+    var existingTrade=activeOpens[0];
+    // Hedge: aynı market, ters yön, henüz o yönde emir yok
     var sameMarket = mid && existingTrade.mid === mid;
     var reverseDir = tDir && existingTrade.dir && tDir !== existingTrade.dir;
     var noHedgeYet = !BS.trades.find(function(t){
       return t.status==='open' && t.mid===mid && t.dir===tDir;
     });
     if(sameMarket && reverseDir && noHedgeYet){
-      lg('bLog','🔄 HEDGE: FVG ters döndü ('+existingTrade.dir+'→'+tDir+') — aynı markette '+tDir+' emri açılıyor!','w');
-      // Hedge iznini ver, devam et
+      lg('bLog','\ud83d\udd04 HEDGE: FVG ters d\u00f6nd\u00fc ('+existingTrade.dir+'\u2192'+tDir+') \u2014 hedge emri a\u00e7\u0131l\u0131yor!','w');
     } else {
-      lg('bLog','Açık işlem var, yeni emir açılmıyor: '+existingTrade.market.substring(0,30),'w');
+      lg('bLog','Ak\u0131f i\u015flem var, yeni emir a\u00e7\u0131lm\u0131yor: '+existingTrade.market.substring(0,30),'w');
       return;
     }
   }
