@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.14'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.16'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -636,18 +636,24 @@ async function _fetchLivePrice(){
         _liveTokens.up=''; _liveTokens.down='';
       }
     } else {
-      // Token yoksa proxy'den market + token bilgisi çek
-      var slot5=Math.floor(Date.now()/1000/300)*300;
-      try{
-        var r=await fetchTimeout(PROXY+'/btc_market?slot='+slot5+'&_nc='+Date.now(), 2000);
-        var d=await r.json();
-        if(d&&d.market){
-          if(d.market.up_token) _liveTokens.up=d.market.up_token;
-          if(d.market.down_token) _liveTokens.down=d.market.down_token;
-          // Token aldık, bir sonraki çevrimde CLOB'dan çekilecek
-          _liveFreezeTs=Date.now();
-        }
-      }catch(e){}
+      // Token yoksa — BS'deki token'ları kullan (tarama sırasında set edilir)
+      if(BS._liveTokenUp && BS._liveTokenDn){
+        _liveTokens.up = BS._liveTokenUp;
+        _liveTokens.down = BS._liveTokenDn;
+      }
+      // Hâlâ yoksa proxy'den çek
+      if(!_liveTokens.up){
+        var slot5=Math.floor(Date.now()/1000/300)*300;
+        try{
+          var r=await fetchTimeout(PROXY+'/btc_market?slot='+slot5, 2000);
+          var d=await r.json();
+          if(d&&d.market){
+            if(d.market.up_token){ _liveTokens.up=d.market.up_token; BS._liveTokenUp=d.market.up_token; }
+            if(d.market.down_token){ _liveTokens.down=d.market.down_token; BS._liveTokenDn=d.market.down_token; }
+          }
+        }catch(e){}
+      }
+      _liveFreezeTs=Date.now()-3500; // bir sonraki çevrimde CLOB'dan çekilsin
     }
   }catch(e){}
 }
@@ -662,7 +668,7 @@ function _updateLiveUI(up, dn){
   BS._liveUp=up; BS._liveDn=dn;
 }
 // Canlı fiyat — 800ms'de bir güncelle, donma koruması ile
-_livePriceTmr=setInterval(_fetchLivePrice, 800);
+_livePriceTmr=setInterval(_fetchLivePrice, 1000);
 // Donma koruması: 4sn'de güncelleme yoksa token sıfırla
 var _liveFreezeCheck=setInterval(function(){
   if(_liveFreezeTs > 0 && Date.now() - _liveFreezeTs > 4000){
@@ -1060,12 +1066,11 @@ function initCharts(){
           ticks:{color:'#3a5060',font:{size:9},maxTicksLimit:6,source:'auto',
             stepSize:5,
             callback:function(val){
-              // Sadece 5'in katı dakikaları göster
               var d=new Date(val); var m=d.getMinutes();
               return m%5===0?d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Istanbul'}):null;
             }
           },
-          grid:{color:'rgba(15,35,50,0.4)',lineWidth:1,borderDash:[3,6]}
+          grid:{display:false}
         },
         y:{position:'right',ticks:{color:'#3a5060',font:{size:9}},grid:{display:false}}
       }
@@ -1086,16 +1091,16 @@ function initCharts(){
         x:{type:'time',
           time:{unit:'minute',stepSize:5,displayFormats:{minute:'HH:mm'},round:'minute'},
           adapters:{date:{locale:'tr'}},
-          ticks:{color:'#3a5060',font:{size:9},maxTicksLimit:8,source:'auto',
+          ticks:{color:'#5a8aaa',font:{size:9},maxTicksLimit:8,source:'auto',
             stepSize:5,
             callback:function(val){
               var d=new Date(val); var m=d.getMinutes();
               return m%5===0?d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Istanbul'}):null;
             }
           },
-          grid:{color:'rgba(15,35,50,0.4)',lineWidth:1,borderDash:[3,6]}
+          grid:{color:'rgba(30,60,85,0.6)',lineWidth:1,borderDash:[4,4]}
         },
-        y:{position:'right',ticks:{color:'#3a5060',font:{size:9}},grid:{display:false}}
+        y:{position:'right',ticks:{color:'#5a8aaa',font:{size:9}},grid:{display:false}}
       }
     }
   });
@@ -1409,8 +1414,8 @@ async function _bScan(){
       BS._liveUp=0; BS._liveDn=0;
       lg('bLog','↻ Yeni market — canlı token sıfırlandı.','i');
     }
-    if(m.up_token) _liveTokens.up=m.up_token;
-    if(m.down_token) _liveTokens.down=m.down_token;
+    if(m.up_token){ _liveTokens.up=m.up_token; BS._liveTokenUp=m.up_token; }
+    if(m.down_token){ _liveTokens.down=m.down_token; BS._liveTokenDn=m.down_token; }
   }
 
   // 3. FVG - Son 30 1dk mumda EN SON kesinleşmiş + ihlal edilmemiş FVG'yi bul
