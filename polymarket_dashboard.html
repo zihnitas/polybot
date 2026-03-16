@@ -34,6 +34,46 @@
   --shadow:0 4px 20px rgba(0,0,0,0.8);
 }
 
+/* ── GÜNDÜZ TEMASI ── */
+body.light-theme{
+  --bg:#e8f0f7;
+  --bg2:#f0f6fc;
+  --bg3:#dce8f4;
+  --border:#b0c8e0;
+  --border2:#90b0d0;
+  --accent:#0066cc;
+  --accent2:#0055aa;
+  --green:#007744;
+  --green2:#005533;
+  --red:#cc1133;
+  --red2:#aa0022;
+  --yellow:#aa8800;
+  --yellow2:#886600;
+  --muted:#5577aa;
+  --muted2:#446688;
+  --text:#112233;
+  --text2:#223344;
+  --white:#000000;
+  --shadow:0 4px 20px rgba(0,0,0,0.15);
+}
+body.light-theme{
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(0,100,200,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(0,150,100,0.04) 0%, transparent 60%);
+}
+body.light-theme::before{
+  background-image:
+    linear-gradient(rgba(0,80,160,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,80,160,0.04) 1px,transparent 1px);
+}
+body.light-theme .cv.g{text-shadow:none;}
+body.light-theme .cv.r{text-shadow:none;}
+body.light-theme .cv.y{text-shadow:none;}
+body.light-theme .sy{text-shadow:none;}
+body.light-theme .sn{text-shadow:none;}
+body.light-theme .dot{box-shadow:none;}
+body.light-theme .btn-a{box-shadow:none;}
+
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
   font-family:'JetBrains Mono',monospace;
@@ -230,6 +270,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
     <div class="badge" id="balBadge" style="color:var(--green);font-weight:700">BAKİYE: $—</div>
     <div class="badge"><div class="dot dry" id="sDot"></div><span id="sTxt">DEMO</span></div>
     <button id="updateBtn" onclick="doUpdate()" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:5px 12px;border-radius:20px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;letter-spacing:1px;transition:all .2s" onmouseover="this.style.background='var(--accent)';this.style.color='var(--bg)'" onmouseout="this.style.background='transparent';this.style.color='var(--accent)'">⬆ GÜNCELLE</button>
+    <button id="themeToggleBtn" onclick="toggleTheme()" title="Gündüz/Gece Tema" style="font-size:16px;background:transparent;border:1px solid var(--border2);border-radius:50%;width:32px;height:32px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center">🌙</button>
     <span id="clk" style="font-size:11px;color:var(--muted)"></span>
   </div>
 </header>
@@ -369,7 +410,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
   </div>
 
   <!-- Ana grid: Sol=Grafikler, Sağ=Redeem+İşlem+Log -->
-  <div style="display:grid;grid-template-columns:1fr 420px;gap:14px">
+  <div style="display:grid;grid-template-columns:1fr 520px;gap:10px">
 
     <!-- Sol kolon: P&L + Grafikler -->
     <div style="display:flex;flex-direction:column;gap:14px">
@@ -412,15 +453,15 @@ tr:hover td{background:rgba(0,240,255,0.03);}
           <span id="open_trade_info" style="color:var(--text);flex:1;min-width:200px">—</span>
           <span id="open_trade_potential" style="font-size:11px"></span>
         </div>
-        <div style="overflow-x:auto;overflow-y:auto;max-height:175px">
+        <div style="overflow-x:auto;overflow-y:auto;max-height:220px">
           <table style="width:100%;min-width:500px;table-layout:fixed">
             <colgroup>
-              <col style="width:68px">
-              <col style="width:52px">
+              <col style="width:75px">
               <col style="width:58px">
-              <col style="width:58px">
-              <col style="width:72px">
-              <col style="width:72px">
+              <col style="width:65px">
+              <col style="width:65px">
+              <col style="width:120px">
+              <col style="width:75px">
             </colgroup>
             <thead><tr><th style="white-space:nowrap">Saat</th><th>Yön</th><th>Fiyat</th><th>Maliyet</th><th>Sonuç</th><th>P&L</th></tr></thead>
           <tbody id="b_tb"><tr><td colspan="6"><div class="es"><div>--</div>Henüz işlem yok</div></td></tr></tbody></table>
@@ -429,7 +470,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
       <!-- Log -->
       <div class="panel lp">
         <div class="ph"><span class="pt">BTC Bot Log</span><button class="btn" style="font-size:9px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--muted)" onclick="clrLog('bLog')">SİL</button><button class="btn" style="font-size:9px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--accent);margin-left:4px" onclick="downloadLog('bLog')">⬇ LOG</button></div>
-        <div class="lc" id="bLog" style="max-height:280px"><div class="le li"><span class="lt">--:--:--</span>BTC botu hazır. Ayarları girip Başlat'a basın.</div></div>
+        <div class="lc" id="bLog" style="max-height:320px"><div class="le li"><span class="lt">--:--:--</span>BTC botu hazır. Ayarları girip Başlat'a basın.</div></div>
       </div>
     </div>
 
@@ -447,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.21.1'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.0'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -646,6 +687,24 @@ async function doUpdate(){
     if(btn){ btn.textContent='⬆ GÜNCELLE'; btn.disabled=false; }
   }
 }
+
+function toggleTheme(){
+  var isLight = document.body.classList.toggle('light-theme');
+  var btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = isLight ? '🌙' : '☀️';
+  try{ localStorage.setItem('polybot_theme', isLight ? 'light' : 'dark'); }catch(e){}
+}
+function loadTheme(){
+  try{
+    var saved = localStorage.getItem('polybot_theme');
+    if(saved === 'light'){
+      document.body.classList.add('light-theme');
+      var btn = document.getElementById('themeToggleBtn');
+      if(btn) btn.textContent = '🌙';
+    }
+  }catch(e){}
+}
+loadTheme();
 
 async function fetchVersion(){
   // Dashboard versiyonunu hemen göster
@@ -1172,12 +1231,15 @@ async function _bScan(){
   // 0. Aktif açık işlem varsa sinyal aramayı atla
   // Sadece endDate geçmemiş open trade'ler yeni emri engeller
   // Sadece endDate geçmemiş open trade'ler yeni emri engeller
+  var _nowMs = Date.now();
   var openTrade=BS.trades.find(function(t){
     if(t.status!=='open') return false;
-    if(!t.endDate) return false; // endDate yoksa engelleme (güvenli taraf değişti)
+    // endDate yoksa veya geçemiyorsak engelleme
+    if(!t.endDate) return false;
     var _ed=new Date(t.endDate);
     if(isNaN(_ed)) return false;
-    return Date.now() < _ed.getTime(); // sadece aktif market engeller
+    // endDate en az 30sn ileride olmalı
+    return _nowMs < _ed.getTime() - 30000;
   });
   if(openTrade){
     // EndDate çok geçmişse (10dk+) trade takılı kalmış — zorla sil, yeni işlem açılsın
@@ -2250,6 +2312,15 @@ async function polySync(){
         if(_oEndTs > 0 && Date.now() >= _oEndTs){
           lg('bLog','ℹ️ Poly Sync: market süresi doldu, replace ediliyor.','w');
           BS.trades = polyTrades;
+          // Güvenlik: replace sonrası süresi dolmuş open trade'leri temizle
+          var _now2=Date.now();
+          BS.trades = BS.trades.filter(function(t){
+            if(t.status!=='open') return true;
+            if(!t.endDate) return false; // endDate yoksa kaldır
+            var _ed2=new Date(t.endDate);
+            if(isNaN(_ed2)) return false;
+            return _now2 < _ed2.getTime(); // sadece aktif olanlar
+          });
         } else if(_oEndTs === 0){
           // endDate bilinmiyor — replace et
           BS.trades = polyTrades;
