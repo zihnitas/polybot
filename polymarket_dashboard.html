@@ -414,10 +414,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
       <input class="pv" type="number" id="b_balance" value="35" min="30" max="49" step="1" style="width:100%;">
     </div>
     <!-- Yeni Market Bekle — sadece GTC'de -->
-    <div id="si_newwait" style="flex-shrink:0;min-width:80px;">
-      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">YENİ MARKET (SN)</div>
-      <input class="pv" type="number" id="b_newwait" value="0" min="0" max="120" step="5" style="width:100%;" title="Yeni market açılınca bekle (0=beklemeden gir)">
-    </div>
+
     <!-- Emir Tipi -->
     <div style="flex-shrink:0;min-width:100px;">
       <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">EMİR TİPİ</div>
@@ -538,7 +535,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.47'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.48'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1512,23 +1509,13 @@ async function _bScan(){
     return;
   }
 
-  // 0c. Yeni 5dk penceresi başladıysa token sıfırla + bekleme süresi başlat
+  // 0c. Yeni 5dk penceresi başladıysa token sıfırla
   var _curSlot=Math.floor(Date.now()/1000/300)*300;
   if(BS._lastSlot && BS._lastSlot !== _curSlot){
     _liveTokens.up=''; _liveTokens.down='';
     BS._liveUp=0; BS._liveDn=0;
-    BS._newMarketTs=Date.now(); // Yeni market başlangıç zamanı
-    lg('bLog','🆕 Yeni market penceresi — '+BS.newMarketWait+'sn bekleniyor...','i');
   }
   BS._lastSlot=_curSlot;
-
-  // Yeni market açıldıktan sonra bekleme süresi
-  var _newMarketWait = (BS.newMarketWait||45) * 1000;
-  if(BS._newMarketTs && Date.now() - BS._newMarketTs < _newMarketWait){
-    var _remainSec = Math.ceil((_newMarketWait - (Date.now()-BS._newMarketTs))/1000);
-    lg('bLog','⏳ Yeni market bekleniyor: '+_remainSec+'sn (likidite oluşsun)','i');
-    return;
-  }
 
   // 1. Mumlar
   var candles=[];
@@ -2295,7 +2282,7 @@ function bStart(){
   BS.betPct=parseFloat(document.getElementById('b_bet_pct').value)||5;
   BS.maxBet=parseFloat(document.getElementById('b_maxbet').value)||5;
 
-  BS.newMarketWait=parseFloat(document.getElementById('b_newwait').value)||45;
+
   BS.useFOK = document.getElementById('b_fok_btn') && 
               document.getElementById('b_fok_btn').dataset.active === '1';
 
