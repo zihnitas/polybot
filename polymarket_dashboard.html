@@ -535,7 +535,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.49'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.50'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -623,7 +623,7 @@ function showLogOptions(){
   var yest=new Date(Date.now()-864e5).toISOString().slice(0,10);
   var m=document.createElement('div');
   m.id='_logModal';
-  m.style.cssText='position:fixed;right:12px;top:44px;background:#1a1a2e;border:1px solid #444;border-radius:8px;padding:14px 16px;z-index:99999;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.9);font-size:12px;opacity:1;';
+  m.style.cssText='position:fixed;right:12px;top:44px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px;z-index:99999;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.85);font-size:12px;';
   var B='http://127.0.0.1:5000/log_download';
   function row(label,url){
     var d=document.createElement('div');
@@ -1446,10 +1446,14 @@ function bAutoMark(trade, winnerStr){
     trade.pnl = 0; // gerçek PnL redeem'den gelecek
     BS.wins++;
     lg('bLog','✅ OTOMATİK WIN: '+trade.dir+' vs '+winnerStr.toUpperCase()+' (redeem bekleniyor)','o');
+    if(!trade.dry) fetch(PROXY+'/notify_trade',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({direction:trade.dir,price:trade.price,bet:trade.bet,status:'win',pnl:0,market:trade.market,bot:'BTC5'})}).catch(function(){});
   } else {
     trade.pnl = -trade.bet;
     BS.loss++; BS.pnl += trade.pnl;
     lg('bLog','❌ OTOMATİK LOSS: '+trade.dir+' vs '+winnerStr.toUpperCase()+' | -$'+trade.bet.toFixed(2),'e');
+    if(!trade.dry) fetch(PROXY+'/notify_trade',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({direction:trade.dir,price:trade.price,bet:trade.bet,status:'loss',pnl:-trade.bet,market:trade.market,bot:'BTC5'})}).catch(function(){});
   }
   BS.pnlHistory.push({t:ts(), v:BS.pnl});
   try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
@@ -2025,6 +2029,12 @@ async function bCheckResult(trade, retries){
       try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
       lg('bLog',trade.dir+' vs '+d.winner.toUpperCase()+' | '+(won?'KAZANDI +$'+trade.pnl.toFixed(2):'KAYBETTİ -$'+trade.bet.toFixed(2)),'o');
       bRender(); bStats(); updatePnlChart();
+      // Telegram bildirimi
+      if(!trade.dry){
+        fetch(PROXY+'/notify_trade',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({direction:trade.dir,price:trade.price,bet:trade.bet,
+            status:trade.status,pnl:trade.pnl,market:trade.market,bot:'BTC5'})}).catch(function(){});
+      }
       // Açık emirleri temizle (kaybedildiyse açık emir kalmış olabilir)
       fetch(PROXY+'/cancel_all_orders',{method:'POST'}).catch(function(){});
       if(!trade.dry && trade.mid){
