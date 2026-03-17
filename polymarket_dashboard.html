@@ -375,32 +375,65 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 
 <!-- ========== TAB 2 BTC ========== -->
 <div class="pane on" id="tb2">
-  <div class="sbar" style="grid-template-columns:repeat(6,1fr) auto;">
-    <div class="si" style="grid-column:span 2">
-      <label>BAHİS MODU</label>
-      <div style="display:flex;gap:6px;margin-top:4px;">
-        <button id="b_mode_fixed" onclick="setBetMode('fixed')" style="flex:1;padding:4px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:#000;font-size:11px;font-weight:700;cursor:pointer;">💰 SABİT TUTAR</button>
-        <button id="b_mode_pct" onclick="setBetMode('pct')" style="flex:1;padding:4px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;">📊 ORANSAL</button>
+  <div style="display:flex;flex-wrap:nowrap;align-items:flex-end;gap:8px;padding:10px 12px;background:var(--panel);border-radius:6px;margin-bottom:8px;overflow-x:auto;">
+    <!-- İşlem Modu -->
+    <div style="flex-shrink:0;min-width:170px;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">İŞLEM MODU</div>
+      <div style="display:flex;gap:4px;">
+        <button id="b_mode_fixed" onclick="setBetMode('fixed')" style="flex:1;padding:4px 6px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:#000;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">💰 SABİT</button>
+        <button id="b_mode_pct" onclick="setBetMode('pct')" style="flex:1;padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:10px;cursor:pointer;white-space:nowrap;">📊 ORANSAL</button>
       </div>
     </div>
-    <div class="si" id="si_fixed"><label>Sabit Tutar ($)</label><input type="number" id="b_bet" value="2.50" min="1" step="0.5"></div>
-    <div class="si" id="si_pct" style="display:none"><label>Bakiye Oranı (%)</label><input type="number" id="b_bet_pct" value="5" min="1" max="20" step="1"></div>
-    <div class="si" id="si_maxbet" style="display:none"><label>Max Bahis ($)</label><input type="number" id="b_maxbet" value="5" min="2" max="50" step="0.5" title="Oransal bahisin üst sınırı"></div>
-    <div class="si"><label>Max Fiyat (≤)</label><input type="number" id="b_mp" value="0.50" min="0.10" max="0.90" step="0.01"></div>
-    <div class="si"><label>Tarama (sn)</label><input type="number" id="b_interval" value="15" min="5" max="60" step="5"></div>
-    <div class="si"><label>Min Denge (%)</label><input type="number" id="b_balance" value="35" min="30" max="49" step="1"></div>
-
-    <div class="si" id="si_newwait"><label>Yeni Market Bekle (sn)</label><input type="number" id="b_newwait" value="45" min="0" max="120" step="5" title="Yeni market açılınca bu kadar saniye bekle (likidite oluşsun)"></div>
-    <div class="si"><label>Emir Tipi</label>
-      <div style="display:flex;gap:5px;margin-top:4px;">
+    <!-- Sabit Tutar -->
+    <div id="si_fixed" style="flex-shrink:0;min-width:90px;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">SABİT TUTAR ($)</div>
+      <input class="pv" type="number" id="b_bet" value="2.50" min="1" step="0.5" style="width:100%;">
+    </div>
+    <!-- Oransal -->
+    <div id="si_pct" style="flex-shrink:0;min-width:90px;display:none;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">BAKİYE ORANI (%)</div>
+      <input class="pv" type="number" id="b_bet_pct" value="5" min="1" max="20" step="1" style="width:100%;">
+    </div>
+    <div id="si_maxbet" style="flex-shrink:0;min-width:90px;display:none;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">MAX BAHİS ($)</div>
+      <input class="pv" type="number" id="b_maxbet" value="5" min="2" max="50" step="0.5" style="width:100%;">
+    </div>
+    <!-- Max Fiyat -->
+    <div style="flex-shrink:0;min-width:80px;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">MAX FİYAT (≤)</div>
+      <input class="pv" type="number" id="b_mp" value="0.50" min="0.10" max="0.90" step="0.01" style="width:100%;">
+    </div>
+    <!-- Tarama -->
+    <div style="flex-shrink:0;min-width:80px;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">TARAMA (SN)</div>
+      <input class="pv" type="number" id="b_interval" value="15" min="5" max="60" step="5" style="width:100%;">
+    </div>
+    <!-- Min Denge -->
+    <div style="flex-shrink:0;min-width:80px;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">MIN DENGE (%)</div>
+      <input class="pv" type="number" id="b_balance" value="35" min="30" max="49" step="1" style="width:100%;">
+    </div>
+    <!-- Yeni Market Bekle — sadece GTC'de -->
+    <div id="si_newwait" style="flex-shrink:0;min-width:80px;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">YENİ MARKET (SN)</div>
+      <input class="pv" type="number" id="b_newwait" value="0" min="0" max="120" step="5" style="width:100%;" title="Yeni market açılınca bekle (0=beklemeden gir)">
+    </div>
+    <!-- Emir Tipi -->
+    <div style="flex-shrink:0;min-width:100px;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">EMİR TİPİ</div>
+      <div style="display:flex;gap:4px;">
         <button id="b_gtc_btn" onclick="setOrderType('GTC')" style="flex:1;padding:4px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:#000;font-size:10px;font-weight:700;cursor:pointer;">GTC</button>
-        <button id="b_fok_btn" onclick="setOrderType('FOK')" style="flex:1;padding:4px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:10px;cursor:pointer;">⚡ FOK</button>
+        <button id="b_fok_btn" onclick="setOrderType('FOK')" style="flex:1;padding:4px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:10px;cursor:pointer;">⚡FOK</button>
       </div>
     </div>
-
-    <div class="si"><label>Mod</label><select id="b_mod"><option value="dry">DEMO</option><option value="live">CANLI (Gerçek Para)</option></select></div>
-    <div style="display:flex;flex-direction:column;gap:5px;justify-content:flex-end">
-      <button class="btn btn-a" id="startStopBtn" onclick="bToggle()">BAŞLAT</button>
+    <!-- Mod -->
+    <div style="flex-shrink:0;min-width:130px;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">MOD</div>
+      <select class="pv" id="b_mod" style="width:100%;"><option value="dry">DEMO</option><option value="live">CANLI (Gerçek Para)</option></select>
+    </div>
+    <!-- Başlat/Durdur -->
+    <div style="flex-shrink:0;">
+      <button class="btn btn-a" id="startStopBtn" onclick="bToggle()" style="white-space:nowrap;height:28px;">BAŞLAT</button>
     </div>
   </div>
 
@@ -505,7 +538,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.43'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.44'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
