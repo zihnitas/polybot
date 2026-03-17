@@ -539,7 +539,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.55'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.56'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -2431,10 +2431,8 @@ async function fetchRedeemStatus(){
     if(!Array.isArray(positions)) return;
     var pending=0, pendingCount=0;
     positions.forEach(function(p){
-      if(p.redeemable){
-        var val=parseFloat(p.currentValue||0);
-        if(val>0){ pending+=val; pendingCount++; }
-      }
+      var val=parseFloat(p.currentValue||p.value||0);
+      if(val>0.01){ pending+=val; pendingCount++; }
     });
     // Tüm botların gerçek işlem geçmişinden maliyet ve net kâr hesapla
     var allTrades=[];
@@ -2465,9 +2463,10 @@ async function fetchRedeemStatus(){
     netEl.textContent=(netProfit>=0?'+$':'-$')+Math.abs(netProfit).toFixed(2);
     netEl.style.color=netProfit>=0?'var(--green)':'var(--red)';
     var statusParts=[];
-    if(pendingCount>0) statusParts.push(pendingCount+' Polymarket\'ta bekleyen');
-    else statusParts.push('Polymarket\'ta bekleyen yok');
-    if(pendingWins>0) statusParts.push(pendingWins+' eski kayıt (pnl=0) — temizlemek için 🧹 bas');
+    if(pendingCount>0) statusParts.push(pendingCount+' pozisyon bekliyor');
+    else statusParts.push('Bekleyen yok');
+    if(pendingWins>0) statusParts.push(pendingWins+' eski kayıt — 🧹 bas');
+    if(window._lastRedeemTime) statusParts.push('Son redeem: '+window._lastRedeemTime);
     document.getElementById('rdm_status').textContent=statusParts.join(' | ');
   }catch(e){console.log('rdm err',e);}
 }
@@ -2799,6 +2798,7 @@ async function _doAutoRedeem(){
           t._redeemed=true;
           try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
           lg('bLog','⚡ OTO-REDEEM (win): '+t.dir+' $'+t.mid.substring(0,10)+'...','o');
+          window._lastRedeemTime = new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Istanbul'});
           setTimeout(fetchBalance,5000);
         }
       }catch(e){}
@@ -2822,6 +2822,7 @@ async function _doAutoRedeem(){
               _markRedeemed(cid);
               var val=parseFloat(pos.currentValue||0);
               lg('bLog','⚡ OTO-REDEEM (positions): $'+val.toFixed(2)+' '+cid.substring(0,12)+'...','o');
+              window._lastRedeemTime = new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Istanbul'});
               setTimeout(fetchBalance,5000);
               // Telegram redeem bildirimi
               if(val>0){
