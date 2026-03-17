@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.32'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.33'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -535,9 +535,34 @@ function lg(id,msg,t){
 }
 function clrLog(id){ document.getElementById(id).innerHTML=''; lg(id,'Log temizlendi.'); }
 
-function downloadLog(botId){
-  // Önce proxy'deki kalıcı log dosyasını indir
+function showLogOptions(){
   var today=new Date().toISOString().slice(0,10);
+  var yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  var choice=prompt(
+    'LOG İNDİR:\n' +
+    '1 = Bugün ('+today+')\n' +
+    '2 = Dün ('+yesterday+')\n' +
+    '3 = Son 2 gün\n' +
+    '4 = Tümü\n' +
+    '5 = Tarih gir (YYYY-MM-DD)\n' +
+    '\nSeçim (1-5):', '1'
+  );
+  if(!choice) return;
+  var url = 'http://127.0.0.1:5000/log_download';
+  if(choice==='1') url += '?date='+today;
+  else if(choice==='2') url += '?date='+yesterday;
+  else if(choice==='3') url += '?last=5000';
+  else if(choice==='4') url += '';
+  else if(choice==='5'){
+    var d=prompt('Tarih (YYYY-MM-DD):',today);
+    if(d) url += '?date='+d;
+  }
+  window.open(url,'_blank');
+}
+
+function downloadLog(botId, dateFilter, hourFrom, hourTo){
+  // Proxy'den log indir — tarih/saat filtreli
+  var today=dateFilter||new Date().toISOString().slice(0,10);
   var a=document.createElement('a');
   a.href=PROXY+'/log_download?date='+today;
   a.download='polybot_log_BTC5_'+today+'.txt';
@@ -2662,7 +2687,7 @@ setTimeout(updatePortfolio,2000);
 (async function(){
   try{
     var today=new Date().toISOString().slice(0,10);
-    var r=await fetch(PROXY+'/log_download?date='+today);
+    var r=await fetch(PROXY+'/log_download?date='+today+'&last=300');
     if(!r.ok) return;
     var text=await r.text();
     var lines=text.split('\n').filter(function(l){return l.trim();});

@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.24.4"
+VERSION = "3.24.5"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -20,31 +20,14 @@ VERSION = "3.24.4"
 import datetime as _dt
 
 def _log_file_path():
-    """Günlük log dosyası: btc_5m_bot_YYYY-MM-DD.log"""
+    """Tek kalıcı log dosyası — tarih prefix'li satırlar."""
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    date_str = _dt.datetime.now().strftime('%Y-%m-%d')
-    return os.path.join(script_dir, f'btc_5m_bot_{date_str}.log')
+    return os.path.join(script_dir, 'polybot_all.log')
 
 def write_bot_log(level, message, source='bLog'):
-    """Log satırını günlük dosyaya yaz."""
+    """Log satırını tek dosyaya tarih+saat prefix ile yaz."""
     try:
-        now = _dt.datetime.now().strftime('%H:%M:%S')
-        line = f"{now} [{level:5}] [{source}] {message}\n"
-        with open(_log_file_path(), 'a', encoding='utf-8') as lf:
-            lf.write(line)
-    except Exception as e:
-        print(f"[LOG] Yazma hatası: {e}")
-
-def _log_file_path():
-    """Günlük log dosyası yolu — btc_5m_bot_YYYY-MM-DD.log"""
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    date_str = _dt.datetime.now().strftime('%Y-%m-%d')
-    return os.path.join(script_dir, f'btc_5m_bot_{date_str}.log')
-
-def write_bot_log(level, message, source='bLog'):
-    """Log satırını günlük dosyaya yaz."""
-    try:
-        now = _dt.datetime.now().strftime('%H:%M:%S')
+        now = _dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         line = f"{now} [{level:5}] [{source}] {message}\n"
         with open(_log_file_path(), 'a', encoding='utf-8') as f:
             f.write(line)
@@ -1148,28 +1131,106 @@ def log_write():
 
 @app.route('/log_list')
 def log_list():
-    """Mevcut log dosyalarını listele."""
+    """Log dosyalarını listele — tek dosya sistemi."""
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        files = sorted([
-            f for f in os.listdir(script_dir)
-            if f.startswith('btc_5m_bot_') and f.endswith('.log')
-        ], reverse=True)
-        return jsonify({'files': files})
+        log_path = os.path.join(script_dir, 'polybot_all.log')
+        if os.path.exists(log_path):
+            size = os.path.getsize(log_path)
+            return jsonify({'files': ['polybot_all.log'], 'size_kb': round(size/1024, 1)})
+        return jsonify({'files': []})
     except Exception as e:
         return jsonify({'files': [], 'error': str(e)})
 
 @app.route('/log_download')
 def log_download():
-    """Belirli log dosyasını indir."""
+    """Log indir — tarih/saat filtreli veya tümü."""
     try:
-        date = request.args.get('date', _dt.datetime.now().strftime('%Y-%m-%d'))
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        log_file = os.path.join(script_dir, f'btc_5m_bot_{date}.log')
-        if os.path.exists(log_file):
-            return send_file(log_file, as_attachment=True,
-                           download_name=f'polybot_log_BTC5_{date}.txt')
-        return jsonify({'error': 'Dosya bulunamadı'})
+        log_path = os.path.join(script_dir, 'polybot_all.log')
+        date_filter  = request.args.get('date', '')   # YYYY-MM-DD
+        hour_from    = request.args.get('from', '')   # HH (0-23)
+        hour_to      = request.args.get('to', '')     # HH (0-23)
+        last_n       = request.args.get('last', '')   # son N satır
+
+        if not os.path.exists(log_path):
+            return jsonify({'error': 'Log dosyası bulunamadı'})
+
+        with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+            lines = f.readlines()
+
+        # Filtrele
+        if date_filter:
+            lines = [l for l in lines if l.startswith(date_filter)]
+        if hour_from:
+            lines = [l for l in lines if len(l) >= 13 and int(l[11:13]) >= int(hour_from)]
+        if hour_to:
+            lines = [l for l in lines if len(l) >= 13 and int(l[11:13]) <= int(hour_to)]
+        if last_n:
+            lines = lines[-int(last_n):]
+
+        content = ''.join(lines)
+        fname = f'polybot_{date_filter or "all"}.txt'
+        from flask import Response
+        return Response(content, mimetype='text/plain',
+                       headers={'Content-Disposition': f'attachment; filename={fname}'})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/log_analyze')
+def log_analyze():
+    """Log analizi — saatlik/günlük performans istatistikleri."""
+    try:
+        import re
+        from collections import defaultdict
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        log_path = os.path.join(script_dir, 'polybot_all.log')
+        date_filter = request.args.get('date', '')
+        days = int(request.args.get('days', 1))
+
+        if not os.path.exists(log_path):
+            return jsonify({'error': 'Log dosyası bulunamadı'})
+
+        with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+            lines = f.readlines()
+
+        if date_filter:
+            lines = [l for l in lines if l.startswith(date_filter)]
+        elif days > 0:
+            # Son N günün logları
+            from datetime import datetime, timedelta
+            cutoff = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+            lines = [l for l in lines if l[:10] >= cutoff]
+
+        # Saatlik analiz
+        hourly = defaultdict(lambda: {'win':0,'loss':0,'cancel':0,'error':0,'sent':0,'pnl':None})
+        daily  = defaultdict(lambda: {'win':0,'loss':0,'cancel':0,'error':0,'sent':0,'pnl':None})
+
+        for line in lines:
+            m = re.match(r'(\d{4}-\d{2}-\d{2}) (\d{2}):', line)
+            if not m: continue
+            day, hr = m.group(1), int(m.group(2))
+            key_h = f"{day} {hr:02d}:00"
+            key_d = day
+
+            for key in [key_h, key_d]:
+                d = hourly[key_h] if key == key_h else daily[key_d]
+                if 'KAYBETTİ' in line and 'vs' in line: d['loss'] += 1
+                elif 'KAZANDI' in line and 'vs' in line: d['win'] += 1
+                elif 'match olmadı' in line: d['cancel'] += 1
+                elif 'EMİR HATASI' in line: d['error'] += 1
+                elif 'EMİR GÖNDERİLDİ' in line: d['sent'] += 1
+
+            pnl_m = re.search(r'Net P&L: \+?([\d.]+)', line)
+            if pnl_m:
+                hourly[key_h]['pnl'] = float(pnl_m.group(1))
+                daily[key_d]['pnl']  = float(pnl_m.group(1))
+
+        return jsonify({
+            'hourly': dict(sorted(hourly.items())),
+            'daily':  dict(sorted(daily.items())),
+            'total_lines': len(lines)
+        })
     except Exception as e:
         return jsonify({'error': str(e)})
 
