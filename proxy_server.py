@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.24.7"
+VERSION = "3.24.8"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -109,9 +109,16 @@ def _tr_time():
 _notified_redeems = set()  # Tekrar bildirim gitmesin
 
 def tg_notify_trade(direction, price, bet, status, pnl, market, bot='BTC5'):
-    """Sadece kesinleşmiş işlem bildirimi — open status görmezden gel."""
+    """İşlem bildirimi — open=match oldu, win/loss=sonuç."""
     if status == 'open':
-        return  # Match bildirimi gitmiyor
+        # Match bildirimi
+        saat = _tr_time()
+        msg = f"⚡ <b>[{bot}] EMİR MATCH OLDU</b>\n"
+        msg += f"Yön: <b>{direction}</b> @ {price:.1%} | Maliyet: ${bet:.2f}\n"
+        msg += f"Piyasa: {market[:40]}\n"
+        msg += f"🕐 {saat}"
+        threading.Thread(target=tg_send, args=(msg,), daemon=True).start()
+        return
     bot_tag = f"[{bot}] "
     saat = _tr_time()
     # Son bakiyeyi çek

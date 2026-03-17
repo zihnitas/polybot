@@ -535,7 +535,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.48'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.49'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1811,7 +1811,7 @@ async function _bScan(){
 
   if(orderOk){
     // _curBalForTrade emir gönderilmeden önce set edildi (aşağıda)
-    var trade={id:Date.now(),time:ts(),date:new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}),dateISO:new Date().toISOString(),market:(m.title||'').substring(0,38),dir:dir,price:price,bet:BS.bet,size:size2,status:'open',pnl:0,dry:BS.dry,mid:mid,endDate:m.endDate||'',_balanceBefore:_curBalForTrade};
+    var trade={id:Date.now(),time:ts(),date:new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}),dateISO:new Date().toISOString(),market:(m.title||'').substring(0,38),dir:dir,price:price,bet:_effectiveBet,size:size2,status:'open',pnl:0,dry:BS.dry,mid:mid,endDate:m.endDate||'',_balanceBefore:_curBalForTrade};
     BS.trades.unshift(trade);
     BS.lastMid=mid;  // trade kaydedildikten sonra set et
     try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
@@ -1849,7 +1849,9 @@ async function _bScan(){
             if(potEl2) potEl2.innerHTML='<span style="color:var(--green);font-weight:700">✅ Match Oldu (bakiye)</span>'
               +'&nbsp;&nbsp;<span style="color:var(--green)">+$'+((trade.size*(1-trade.price))-trade.bet).toFixed(2)+'</span>'
               +'&nbsp;&nbsp;<span style="color:var(--red)">-$'+trade.bet.toFixed(2)+'</span>';
-            // Match bildirimi Telegram'a gitmiyor — sadece kesinleşince bildir
+            // Match bildirimi Telegram'a gönder
+            if(!trade.dry) fetch(PROXY+'/notify_trade',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({direction:trade.dir,price:trade.price,bet:trade.bet,status:'open',pnl:0,market:trade.market,bot:'BTC5'})}).catch(function(){});
             return; // Trade korunuyor
           }
 
