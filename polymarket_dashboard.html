@@ -313,11 +313,18 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 
 <!-- Cüzdan & Redeem Paneli — Global, sekmelerin üstünde -->
 <div class="panel" style="margin-bottom:8px">
-  <div class="ph"><span class="pt">Cüzdan & Redeem</span>
-    <button onclick="manualRedeem()" style="font-size:9px;padding:3px 10px;background:var(--green);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700" title="Bekleyen pozisyonları redeem et">⚡ REDEEM</button>
-    <button onclick="polySync()" style="font-size:9px;padding:3px 10px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="Polymarket'tan gerçek işlem geçmişini çek">🔃 POLY SYNC</button>
-    <button onclick="checkPositions()" style="font-size:9px;padding:3px 10px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="Polymarket'taki gerçek pozisyonları göster">🔍 POZİSYON</button>
-    <button onclick="cleanStaleWins()" style="font-size:9px;padding:3px 10px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="pnl=0 olan eski win kayıtlarını temizle">🧹 TEMİZLE</button>
+  <div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;">
+    <span class="pt">Cüzdan & Redeem</span>
+    <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
+      <div style="display:flex;gap:4px;">
+        <button onclick="manualRedeem()" style="font-size:9px;padding:2px 8px;background:var(--green);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-weight:700">⚡ REDEEM</button>
+        <button onclick="polySync()" style="font-size:9px;padding:2px 8px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-weight:700">🔃 POLY SYNC</button>
+      </div>
+      <div style="display:flex;gap:4px;">
+        <button onclick="checkPositions()" style="font-size:9px;padding:2px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-weight:700">🔍 POZİSYON</button>
+        <button onclick="cleanStaleWins()" style="font-size:9px;padding:2px 8px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:4px;cursor:pointer;font-weight:700">🧹 TEMİZLE</button>
+      </div>
+    </div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;padding:5px 10px 3px">
     <div>
@@ -389,7 +396,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
       </div>
     </div>
     <!-- Sabit Tutar -->
-    <div id="si_fixed" style="flex-shrink:0;min-width:90px;">
+    <div id="si_fixed" style="flex-shrink:0;min-width:60px;max-width:80px;">
       <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">SABİT TUTAR ($)</div>
       <input class="pv" type="number" id="b_bet" value="2.50" min="1" step="0.5" style="width:100%;">
     </div>
@@ -440,18 +447,23 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 
   <!-- FVG Sinyal Göstergesi — grafik içinde -->
 
-  <div class="mib">
-    <div class="mil"><label>Mevcut Piyasa</label><span id="b_mt">Bekleniyor...</span></div>
-    <div class="mil"><label>Kapanış</label><span id="b_me">—</span></div>
-    <div class="mil">
-      <label>Gerçek Zamanlı Fiyat</label>
-      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
-        <span style="color:var(--green)" id="b_up">UP 50%</span>
-        <span style="color:var(--red)" id="b_dn">DOWN 50%</span>
+  <!-- Piyasa + Fiyat + Tarama — tek satır -->
+  <div style="display:flex;align-items:center;gap:10px;padding:5px 10px;background:var(--panel);border-radius:6px;margin-bottom:6px;border:1px solid var(--border);overflow-x:auto;">
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:1px;font-weight:600;letter-spacing:.5px;">MEVCUT PİYASA</div>
+      <span id="b_mt" style="font-size:10px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">Bekleniyor...</span>
+    </div>
+    <div style="flex-shrink:0;min-width:200px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:2px;">
+        <span style="color:var(--green)" id="b_up">UP 50¢</span>
+        <span style="color:var(--red)" id="b_dn">DOWN 50¢</span>
       </div>
       <div class="prbb"><div class="pru" id="b_ub" style="width:50%"></div><div class="prd" id="b_db" style="width:50%"></div></div>
     </div>
-    <div class="mil" style="text-align:right"><label>Sonraki Tarama</label><span id="b_ns" style="color:var(--accent);font-size:20px">—</span></div>
+    <div style="flex-shrink:0;text-align:right;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:1px;font-weight:600;letter-spacing:.5px;">SONRAKI TARAMA</div>
+      <span id="b_ns" style="color:var(--accent);font-size:22px;font-weight:700;">—</span>
+    </div>
   </div>
 
   <div class="grid5">
@@ -471,7 +483,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
         <div style="padding:4px 8px"><canvas id="pnlChart" height="70"></canvas></div>
       </div>
       <!-- İki grafik yan yana: 5dk solda, 1dk sağda -->
-      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:10px">
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">
         <div class="panel">
           <div class="ph"><span class="pt">BTC/USDT 5 Dakika</span><span style="font-size:10px;color:var(--muted)">Son 3 mum</span></div>
           <div style="padding:6px 8px 4px 8px"><canvas id="btcChart5m" height="220"></canvas></div>
@@ -539,7 +551,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.53'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.54'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1805,10 +1817,14 @@ async function _bScan(){
           var _status = BS.useFOK ? (_isFilled?'✅ ANINDA MATCH':'❌ FOK — dolmadı, iptal') : '';
           lg('bLog','[CANLI] EMİR GÖNDERİLDİ: BUY '+dir+' @ '+price.toFixed(3)+' | $'+_effectiveBet.toFixed(2)+' | '+_orderType+' '+_status,'o');
           if(BS.useFOK && !_isFilled){
-            // FOK dolmadı — trade kaydetme, bir sonraki taramada tekrar dene
             lg('bLog','FOK emri dolmadı — trade açılmadı, sinyal beklenecek.','w');
             fetchBalance();
             return;
+          }
+          if(BS.useFOK){
+            // FOK match — Telegram'a bildir
+            fetch(PROXY+'/notify_trade',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({direction:dir,price:price,bet:_effectiveBet,status:'open',pnl:0,market:(m.title||'').substring(0,38),bot:'BTC5'})}).catch(function(){});
           }
           orderOk=true;fetchBalance();
         }
@@ -1838,12 +1854,21 @@ async function _bScan(){
     try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
     bRender();
 
-    // FOK'ta anında match — 45sn kontrol gerekmiyor
-    // GTC'de 45sn sonra kontrol et
+    // Sonuç kontrolünü planla (hem FOK hem GTC)
     if(!BS.dry){
       var potEl=document.getElementById('open_trade_potential');
       if(BS.useFOK){
-        if(potEl) potEl.innerHTML='<span style="color:var(--green);font-size:10px">⚡ FOK — match bekleniyor</span>';
+        // FOK: bakiye zaten düştü, direkt sonuç beklemeye geç
+        if(potEl) potEl.innerHTML='<span style="color:var(--green);font-size:10px">⚡ FOK — sonuç bekleniyor</span>';
+        var msEndFok;
+        try{
+          var remaining2=trade.endDate?new Date(trade.endDate).getTime()-Date.now():0;
+          if(remaining2<=30000) msEndFok=5000;
+          else msEndFok=Math.max(5000,remaining2-15000);
+          if(msEndFok>300000) msEndFok=10000;
+        }catch(e2){ msEndFok=10000; }
+        lg('bLog','Sonuç ilk kontrol ~'+Math.round(msEndFok/1000)+'sn sonra. EndDate='+(trade.endDate||'?'),'i');
+        setTimeout(function(){bCheckResult(trade);},msEndFok);
       } else {
       if(potEl) potEl.innerHTML='<span style="color:var(--muted);font-size:10px">⏳ Match kontrol ediliyor...</span>';
       setTimeout(async function(){
