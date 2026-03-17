@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.33'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.34'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -774,9 +774,20 @@ async function doUpdate(){
     if(d.success){
       lg('bLog','✅ Dosyalar güncellendi: '+d.updated.join(', '),'o');
       if(d.auto_restart){
-        lg('bLog','🔄 Proxy otomatik yeniden başlatılıyor, 6sn sonra yenilenecek...','w');
+        lg('bLog','🔄 Proxy yeniden başlatılıyor, 10sn sonra sayfa yenileniyor...','w');
         if(btn) btn.textContent='🔄 Yeniden başlatılıyor...';
-        setTimeout(function(){ location.href=location.href.split("?")[0]+"?nc="+Date.now(); }, 6000);
+        // Proxy kapanıp açılana kadar bekle, sonra yenile
+        var _retries=0;
+        function _waitProxy(){
+          fetch('http://127.0.0.1:5000/version').then(function(){
+            location.href=location.href.split("?")[0]+"?nc="+Date.now();
+          }).catch(function(){
+            _retries++;
+            if(_retries<20) setTimeout(_waitProxy, 1000);
+            else location.href=location.href.split("?")[0]+"?nc="+Date.now();
+          });
+        }
+        setTimeout(_waitProxy, 3000);
       } else {
         lg('bLog','⚠️ Proxy yeniden başlatın (BASLAT.bat), sayfa 3sn sonra yenilenecek...','w');
         if(btn) btn.textContent='✅ Sayfa yenileniyor...';

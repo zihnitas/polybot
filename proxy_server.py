@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.24.5"
+VERSION = "3.24.6"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -1770,16 +1770,25 @@ def update():
         # proxy_server.py güncellendiyse otomatik restart
         if 'proxy_server.py' in updated:
             def _restart():
-                import time as _t
-                _t.sleep(1.5)  # Yanıt gönderilsin
-                import sys, os
+                import time as _t, sys, os, subprocess
+                _t.sleep(2)  # Yanıt gönderilsin
                 print("[UPDATE] Proxy yeniden başlatılıyor...")
-                os.execv(sys.executable, [sys.executable] + sys.argv)
+                try:
+                    # Windows: yeni process başlat, eskisi kapansın
+                    script = os.path.abspath(sys.argv[0])
+                    subprocess.Popen(
+                        [sys.executable, script],
+                        creationflags=getattr(subprocess, 'CREATE_NEW_CONSOLE', 0)
+                    )
+                except Exception as e:
+                    print(f"[UPDATE] Restart hatası: {e}")
+                finally:
+                    os._exit(0)  # Mevcut process'i kapat
             threading.Thread(target=_restart, daemon=True).start()
             return jsonify({
                 'success': True,
                 'updated': updated,
-                'message': 'Güncelleme tamamlandı! Proxy otomatik yeniden başlatılıyor...',
+                'message': 'Güncelleme tamamlandı! Proxy yeniden başlatılıyor...',
                 'auto_restart': True
             })
 
