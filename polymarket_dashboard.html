@@ -389,15 +389,15 @@ tr:hover td{background:rgba(0,240,255,0.03);}
     <div class="si"><label>Max Fiyat (≤)</label><input type="number" id="b_mp" value="0.50" min="0.10" max="0.90" step="0.01"></div>
     <div class="si"><label>Tarama (sn)</label><input type="number" id="b_interval" value="15" min="5" max="60" step="5"></div>
     <div class="si"><label>Min Denge (%)</label><input type="number" id="b_balance" value="35" min="30" max="49" step="1"></div>
-    <div class="si"><label>Min FVG Gap (%)</label><input type="number" id="b_minfvg" value="0.03" min="0.01" max="0.5" step="0.01" title="Bu yüzdeden küçük FVG'ler sinyal vermez"></div>
-    <div class="si"><label>Yeni Market Bekle (sn)</label><input type="number" id="b_newwait" value="45" min="0" max="120" step="5" title="Yeni market açılınca bu kadar saniye bekle (likidite oluşsun)"></div>
+
+    <div class="si" id="si_newwait"><label>Yeni Market Bekle (sn)</label><input type="number" id="b_newwait" value="45" min="0" max="120" step="5" title="Yeni market açılınca bu kadar saniye bekle (likidite oluşsun)"></div>
     <div class="si"><label>Emir Tipi</label>
       <div style="display:flex;gap:5px;margin-top:4px;">
         <button id="b_gtc_btn" onclick="setOrderType('GTC')" style="flex:1;padding:4px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:#000;font-size:10px;font-weight:700;cursor:pointer;">GTC</button>
         <button id="b_fok_btn" onclick="setOrderType('FOK')" style="flex:1;padding:4px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:10px;cursor:pointer;">⚡ FOK</button>
       </div>
     </div>
-    <div class="si" style="grid-column:span 2"><label>Yasak Saatler (TR, virgülle)</label><input type="text" id="b_banhours" value="" placeholder="örn: 0,1,2,22,23" style="width:100%" title="Bu TR saatlerinde bot emir açmaz"></div>
+
     <div class="si"><label>Mod</label><select id="b_mod"><option value="dry">DEMO</option><option value="live">CANLI (Gerçek Para)</option></select></div>
     <div style="display:flex;flex-direction:column;gap:5px;justify-content:flex-end">
       <button class="btn btn-a" id="startStopBtn" onclick="bToggle()">BAŞLAT</button>
@@ -505,7 +505,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.40'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.42'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -555,12 +555,15 @@ function clrLog(id){ document.getElementById(id).innerHTML=''; lg(id,'Log temizl
 function setOrderType(type){
   var gtc=document.getElementById('b_gtc_btn');
   var fok=document.getElementById('b_fok_btn');
+  var siWait=document.getElementById('si_newwait');
   if(type==='FOK'){
     fok.style.background='var(--accent)';fok.style.color='#000';fok.style.border='1px solid var(--accent)';
     gtc.style.background='transparent';gtc.style.color='var(--muted)';gtc.style.border='1px solid var(--border)';
+    if(siWait) siWait.style.display='none'; // FOK'ta bekleme yok
   } else {
     gtc.style.background='var(--accent)';gtc.style.color='#000';gtc.style.border='1px solid var(--accent)';
     fok.style.background='transparent';fok.style.color='var(--muted)';fok.style.border='1px solid var(--border)';
+    if(siWait) siWait.style.display=''; // GTC'de bekleme var
   }
 }
 
@@ -1621,19 +1624,8 @@ async function _bScan(){
     var fvgInSlot = allCandles1m[fvg.idx] && allCandles1m[fvg.idx].time >= slotStart5m;
     var fvgLabel = fvgInSlot ? 'MEVCUT PENCERE' : fvgAge+' mum önce (önceki pencere)';
     lg('bLog','✅ Geçerli FVG: '+fvg.type.toUpperCase()+' | Gap='+(fvg.top-fvg.bottom).toFixed(1)+'$ | '+fvgLabel,'s');
-    // Min FVG gap filtresi
-    var _minFvg = BS.minFvgPct || 0.03;
-    if(fvg.pct < _minFvg){
-      lg('bLog','FVG gap çok küçük ('+fvg.pct.toFixed(3)+'% < min '+_minFvg+'%) — sinyal geçildi.','w');
-      showFVGSignal(null,'fvg_signal_bar'); return;
-    }
-    // Yasak saat kontrolü
-    var _curHour = new Date().getHours();
-    var _banHours = BS.banHours||[];
-    if(_banHours.indexOf(_curHour) !== -1){
-      lg('bLog','Yasak saat: TR '+_curHour+':xx — bot bu saatte çalışmıyor.','w');
-      showFVGSignal(null,'fvg_signal_bar'); return;
-    }
+
+
     tDir=fvg.type==='bullish'?'UP':'DOWN';
     flashFVG(tDir);
   } else {
@@ -2262,13 +2254,12 @@ function bStart(){
   BS.bet=parseFloat(document.getElementById('b_bet').value)||2.5;
   BS.betPct=parseFloat(document.getElementById('b_bet_pct').value)||5;
   BS.maxBet=parseFloat(document.getElementById('b_maxbet').value)||5;
-  BS.minFvgPct=parseFloat(document.getElementById('b_minfvg').value)||0.03;
+
   BS.newMarketWait=parseFloat(document.getElementById('b_newwait').value)||45;
   BS.useFOK = document.getElementById('b_fok_btn') && 
               document.getElementById('b_fok_btn').style.background !== 'transparent' &&
               document.getElementById('b_fok_btn').style.background !== '';
-  var _bh=document.getElementById('b_banhours').value||'';
-  BS.banHours=_bh?_bh.split(',').map(function(x){return parseInt(x.trim());}).filter(function(x){return !isNaN(x);}) : [];
+
   BS.maxPrice=parseFloat(document.getElementById('b_mp').value)||0.50;
   BS.minBalance=(parseFloat(document.getElementById('b_balance').value)||35)/100;
   BS.dry=document.getElementById('b_mod').value==='dry';
