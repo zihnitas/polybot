@@ -488,7 +488,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.35'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.36'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -536,28 +536,60 @@ function lg(id,msg,t){
 function clrLog(id){ document.getElementById(id).innerHTML=''; lg(id,'Log temizlendi.'); }
 
 function showLogOptions(){
+  var ex=document.getElementById('_logModal');
+  if(ex){ex.remove();return;}
   var today=new Date().toISOString().slice(0,10);
-  var yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
-  var choice=prompt(
-    'LOG İNDİR:\n' +
-    '1 = Bugün ('+today+')\n' +
-    '2 = Dün ('+yesterday+')\n' +
-    '3 = Son 2 gün\n' +
-    '4 = Tümü\n' +
-    '5 = Tarih gir (YYYY-MM-DD)\n' +
-    '\nSeçim (1-5):', '1'
-  );
-  if(!choice) return;
-  var url = 'http://127.0.0.1:5000/log_download';
-  if(choice==='1') url += '?date='+today;
-  else if(choice==='2') url += '?date='+yesterday;
-  else if(choice==='3') url += '?last=5000';
-  else if(choice==='4') url += '';
-  else if(choice==='5'){
-    var d=prompt('Tarih (YYYY-MM-DD):',today);
-    if(d) url += '?date='+d;
+  var yest=new Date(Date.now()-864e5).toISOString().slice(0,10);
+  var m=document.createElement('div');
+  m.id='_logModal';
+  m.style.cssText='position:fixed;right:12px;top:44px;background:#1a1a2e;border:1px solid #444;border-radius:8px;padding:14px 16px;z-index:99999;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.9);font-size:12px;opacity:1;';
+  var B='http://127.0.0.1:5000/log_download';
+  function row(label,url){
+    var d=document.createElement('div');
+    d.textContent=label;
+    d.style.cssText='padding:7px 10px;margin:3px 0;border-radius:5px;cursor:pointer;color:var(--text);border:1px solid var(--border);';
+    d.onmouseover=function(){this.style.background='var(--hover)';};
+    d.onmouseout=function(){this.style.background='';};
+    d.onclick=function(){window.open(B+url,'_blank');m.remove();};
+    return d;
   }
-  window.open(url,'_blank');
+  var t=document.createElement('div');
+  t.textContent='⬇ Log İndir';
+  t.style.cssText='font-weight:700;margin-bottom:10px;color:var(--text);font-size:13px;';
+  m.appendChild(t);
+  m.appendChild(row('📅 Bugün','?date='+today));
+  m.appendChild(row('📅 Dün','?date='+yest));
+  m.appendChild(row('📆 Son 3 gün','?last=9000'));
+  m.appendChild(row('📦 Tümü',''));
+  var sep=document.createElement('div');
+  sep.style.cssText='margin-top:8px;border-top:1px solid var(--border);padding-top:8px;';
+  var lbl=document.createElement('div');
+  lbl.textContent='Tarih seç:';
+  lbl.style.cssText='color:var(--muted);margin-bottom:5px;font-size:11px;';
+  sep.appendChild(lbl);
+  var rw=document.createElement('div');
+  rw.style.cssText='display:flex;gap:6px;';
+  var inp=document.createElement('input');
+  inp.type='date';inp.value=today;
+  inp.style.cssText='flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 6px;font-size:11px;';
+  var dlb=document.createElement('button');
+  dlb.textContent='İndir';
+  dlb.style.cssText='background:var(--accent);color:#000;border:none;border-radius:4px;padding:5px 8px;cursor:pointer;font-size:11px;font-weight:700;';
+  dlb.onclick=function(){if(inp.value){window.open(B+'?date='+inp.value,'_blank');m.remove();}};
+  rw.appendChild(inp);rw.appendChild(dlb);
+  sep.appendChild(rw);
+  m.appendChild(sep);
+  var cls=document.createElement('div');
+  cls.textContent='✕ Kapat';
+  cls.style.cssText='margin-top:10px;text-align:center;color:var(--muted);cursor:pointer;font-size:11px;';
+  cls.onclick=function(){m.remove();};
+  m.appendChild(cls);
+  document.body.appendChild(m);
+  setTimeout(function(){
+    document.addEventListener('click',function _c(e){
+      if(!m.contains(e.target)){m.remove();document.removeEventListener('click',_c);}
+    });
+  },100);
 }
 
 function downloadLog(botId, dateFilter, hourFrom, hourTo){
