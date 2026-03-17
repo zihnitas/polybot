@@ -443,7 +443,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
           <div style="padding:8px 8px 4px 8px"><canvas id="btcChart5m" height="180"></canvas></div>
         </div>
         <div class="panel">
-          <div class="ph"><span class="pt">BTC/USDT 1 Dakika</span><span style="font-size:10px;color:var(--muted)">Son 30 mum • Sinyal</span></div>
+          <div class="ph"><span class="pt">BTC/USDT 1 Dakika</span><span style="font-size:10px;color:var(--muted)">Son 10 mum • Sinyal</span></div>
           <div style="position:relative;padding:8px 8px 4px 8px">
             <div id="fvg_signal_bar" style="display:none;position:absolute;top:12px;right:12px;z-index:10;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;pointer-events:none"></div>
             <canvas id="btcChart" height="180"></canvas>
@@ -505,7 +505,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.42'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.43'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1501,7 +1501,7 @@ async function _bScan(){
   try{
     var results=await Promise.all([
       fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=12').then(function(r){return r.json();}).then(function(d){return d.map(function(c){return {time:parseInt(c[0]),open:parseFloat(c[1]),high:parseFloat(c[2]),low:parseFloat(c[3]),close:parseFloat(c[4]),volume:parseFloat(c[5])};});}),
-      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=30').then(function(r){return r.json();}).then(function(d){return d.map(function(c){return {time:parseInt(c[0]),open:parseFloat(c[1]),high:parseFloat(c[2]),low:parseFloat(c[3]),close:parseFloat(c[4]),volume:parseFloat(c[5])};});})
+      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=10').then(function(r){return r.json();}).then(function(d){return d.map(function(c){return {time:parseInt(c[0]),open:parseFloat(c[1]),high:parseFloat(c[2]),low:parseFloat(c[3]),close:parseFloat(c[4]),volume:parseFloat(c[5])};});})
     ]);
     candles=results[0]; candles1m=results[1];
     BS.lastCandles=candles; BS.lastCandles1m=candles1m;
@@ -2311,7 +2311,7 @@ async function updateChartOnly(){
   try{
     var results=await Promise.all([
       fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=12').then(function(r){return r.json();}).then(function(d){return d.map(function(c){return {time:parseInt(c[0]),open:parseFloat(c[1]),high:parseFloat(c[2]),low:parseFloat(c[3]),close:parseFloat(c[4]),volume:parseFloat(c[5])};});}),
-      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=30').then(function(r){return r.json();}).then(function(d){return d.map(function(c){return {time:parseInt(c[0]),open:parseFloat(c[1]),high:parseFloat(c[2]),low:parseFloat(c[3]),close:parseFloat(c[4]),volume:parseFloat(c[5])};});})
+      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=10').then(function(r){return r.json();}).then(function(d){return d.map(function(c){return {time:parseInt(c[0]),open:parseFloat(c[1]),high:parseFloat(c[2]),low:parseFloat(c[3]),close:parseFloat(c[4]),volume:parseFloat(c[5])};});})
     ]);
     var c5=results[0], c1=results[1];
     BS.lastCandles=c5; BS.lastCandles1m=c1;
