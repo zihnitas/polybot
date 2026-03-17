@@ -538,7 +538,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.45'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.47'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -592,11 +592,13 @@ function setOrderType(type){
   if(type==='FOK'){
     fok.style.background='var(--accent)';fok.style.color='#000';fok.style.border='1px solid var(--accent)';
     gtc.style.background='transparent';gtc.style.color='var(--muted)';gtc.style.border='1px solid var(--border)';
-    if(siWait) siWait.style.display='none'; // FOK'ta bekleme yok
+    fok.dataset.active='1'; gtc.dataset.active='0';
+    if(siWait) siWait.style.display='none';
   } else {
     gtc.style.background='var(--accent)';gtc.style.color='#000';gtc.style.border='1px solid var(--accent)';
     fok.style.background='transparent';fok.style.color='var(--muted)';fok.style.border='1px solid var(--border)';
-    if(siWait) siWait.style.display=''; // GTC'de bekleme var
+    gtc.dataset.active='1'; fok.dataset.active='0';
+    if(siWait) siWait.style.display='';
   }
 }
 
@@ -1803,11 +1805,17 @@ async function _bScan(){
           orderOk=true;fetchBalance();
         }
         else{
-          lg('bLog','EMİR HATASI: '+od2.error,'e');
-          // Bakiye yetersizse botu otomatik durdur
-          if(od2.error&&(od2.error.indexOf('not enough balance')>=0||od2.error.indexOf('allowance')>=0)){
-            lg('bLog','🛑 BAKİYE YETERSİZ — Bot otomatik durduruluyor!','e');
-            bToggle(); // botu durdur
+          // FOK dolmama durumu normal — hata değil
+          var _isFokKill = od2.error && od2.error.indexOf("fully filled") >= 0;
+          if(_isFokKill){
+            lg('bLog','⚡ FOK: Likidite yetersiz — emir iptal edildi, sinyal beklenecek.','w');
+          } else {
+            lg('bLog','EMİR HATASI: '+od2.error,'e');
+            // Bakiye yetersizse botu otomatik durdur
+            if(od2.error&&(od2.error.indexOf('not enough balance')>=0||od2.error.indexOf('allowance')>=0)){
+              lg('bLog','🛑 BAKİYE YETERSİZ — Bot otomatik durduruluyor!','e');
+              bToggle();
+            }
           }
         }
       }catch(e){lg('bLog','Emir gönderilemedi: '+e.message,'e');}
@@ -1827,10 +1835,9 @@ async function _bScan(){
     if(!BS.dry){
       var potEl=document.getElementById('open_trade_potential');
       if(BS.useFOK){
-        // FOK — zaten match oldu, direkt sonuç bekle
-        if(potEl) potEl.innerHTML='<span style="color:var(--green);font-size:10px">⚡ FOK — anında match</span>';
+        if(potEl) potEl.innerHTML='<span style="color:var(--green);font-size:10px">⚡ FOK — match bekleniyor</span>';
       } else {
-      if(potEl) potEl.innerHTML='<span style="color:var(--muted);font-size:10px">⏳ Match kontrol ediliyor (45sn)...</span>';
+      if(potEl) potEl.innerHTML='<span style="color:var(--muted);font-size:10px">⏳ Match kontrol ediliyor...</span>';
       setTimeout(async function(){
         var chk=BS.trades.find(function(x){return x.id===trade.id;});
         if(!chk||chk.status!=='open') return;
@@ -2290,8 +2297,7 @@ function bStart(){
 
   BS.newMarketWait=parseFloat(document.getElementById('b_newwait').value)||45;
   BS.useFOK = document.getElementById('b_fok_btn') && 
-              document.getElementById('b_fok_btn').style.background !== 'transparent' &&
-              document.getElementById('b_fok_btn').style.background !== '';
+              document.getElementById('b_fok_btn').dataset.active === '1';
 
   BS.maxPrice=parseFloat(document.getElementById('b_mp').value)||0.50;
   BS.minBalance=(parseFloat(document.getElementById('b_balance').value)||35)/100;
