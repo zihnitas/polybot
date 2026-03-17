@@ -101,15 +101,15 @@ body::before{
 }
 
 /* ── LAYOUT ── */
-.wrap{max-width:1600px;margin:0 auto;padding:10px 14px;position:relative;z-index:1;}
+.wrap{max-width:1600px;margin:0 auto;padding:4px 8px;position:relative;z-index:1;}
 
 /* ── HEADER ── */
 header{
   display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:8px;padding-bottom:8px;
+  margin-bottom:4px;padding-bottom:4px;
   border-bottom:1px solid var(--border2);
 }
-.logo{font-family:'Barlow',sans-serif;font-size:20px;font-weight:800;color:var(--white);letter-spacing:2px;}
+.logo{font-family:'Barlow',sans-serif;font-size:16px;font-weight:800;color:var(--white);letter-spacing:2px;}
 .logo span{color:var(--accent);}
 .hdr-right{display:flex;gap:8px;align-items:center;}
 .badge{
@@ -124,11 +124,11 @@ header{
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 10px currentColor}50%{opacity:.5;box-shadow:0 0 4px currentColor}}
 
 /* ── TABS ── */
-.tabs{display:flex;gap:0;margin-bottom:10px;border-bottom:2px solid var(--border2);}
+.tabs{display:flex;gap:0;margin-bottom:4px;border-bottom:2px solid var(--border2);}
 .tab{
-  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
   letter-spacing:1px;text-transform:uppercase;
-  padding:8px 20px;background:transparent;border:none;
+  padding:5px 16px;background:transparent;border:none;
   border-bottom:3px solid transparent;margin-bottom:-2px;
   color:var(--muted2);cursor:pointer;transition:all .15s;
 }
@@ -163,11 +163,11 @@ header{
 .btn-r:hover{background:var(--red);color:var(--white);}
 
 /* ── KARTLAR ── */
-.grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px;}
-.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px;}
+.grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:6px;}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:5px;}
 .card{
   background:var(--bg2);border:1px solid var(--border2);border-radius:6px;
-  padding:8px 10px;position:relative;overflow:hidden;transition:border-color .15s,box-shadow .15s;
+  padding:5px 8px;position:relative;overflow:hidden;transition:border-color .15s,box-shadow .15s;
 }
 .card:hover{border-color:var(--accent2);box-shadow:0 0 12px rgba(0,240,255,0.1);}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:.6;}
@@ -176,7 +176,7 @@ header{
 .card.y::before{background:var(--yellow);}
 .card.p::before{background:#aa55ff;}
 .cl{font-size:9px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
-.cv{font-family:'Barlow',sans-serif;font-size:18px;font-weight:800;color:var(--white);line-height:1;}
+.cv{font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--white);line-height:1;}
 .cv.g{color:var(--green);text-shadow:0 0 12px rgba(0,255,136,0.4);}
 .cv.r{color:var(--red);text-shadow:0 0 12px rgba(255,34,68,0.4);}
 .cv.y{color:var(--yellow);text-shadow:0 0 12px rgba(255,230,0,0.4);}
@@ -190,7 +190,7 @@ header{
 .panel{background:var(--bg2);border:1px solid var(--border2);border-radius:6px;overflow:hidden;}
 .ph{
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;
-  padding:8px 12px;border-bottom:1px solid var(--border2);background:var(--bg3);
+  padding:5px 10px;border-bottom:1px solid var(--border2);background:var(--bg3);
 }
 .pt{font-family:'Barlow',sans-serif;font-size:11px;font-weight:700;color:var(--white);letter-spacing:2px;text-transform:uppercase;}
 .cb{font-size:9px;padding:2px 6px;border-radius:8px;background:var(--bg);border:1px solid var(--border2);color:var(--muted2);}
@@ -223,9 +223,9 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 /* ── LOG ── */
 .lp{display:flex;flex-direction:column;}
 .lc{
-  padding:8px;overflow-y:auto;
-  max-height:calc(100vh - 420px);min-height:200px;
-  font-size:10px;line-height:1.6;overflow-x:hidden;word-break:break-word;
+  padding:6px;overflow-y:auto;
+  max-height:calc(100vh - 500px);min-height:120px;
+  font-size:10px;line-height:1.5;overflow-x:hidden;word-break:break-word;
 }
 .le{padding:2px 6px;border-radius:2px;margin-bottom:1px;animation:fi .2s ease;}
 @keyframes fi{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
@@ -247,8 +247,8 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 /* ── MARKEt INFO BAR ── */
 .mib{
   display:grid;grid-template-columns:1fr 1fr 1fr auto;
-  gap:8px;padding:10px 12px;
-  background:var(--bg2);border:1px solid var(--border2);border-radius:6px;margin-bottom:10px;align-items:center;
+  gap:6px;padding:6px 10px;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:6px;margin-bottom:6px;align-items:center;
 }
 .mil label{font-size:9px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:2px;}
 .mil span{font-size:13px;color:var(--white);font-weight:700;}
@@ -281,48 +281,48 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 
 
 <!-- PORTFÖY ÖZET BAR — tek satır -->
-<div id="portfolio_bar" style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:8px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap;">
-  <div style="display:flex;align-items:center;gap:5px;padding-right:10px;border-right:1px solid var(--border)">
-    <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Bakiye</span>
-    <span id="pf_balance" style="font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--green)">$—</span>
+<div id="portfolio_bar" style="display:flex;align-items:center;gap:5px;margin-bottom:5px;padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;flex-wrap:wrap;">
+  <div style="display:flex;align-items:center;gap:4px;padding-right:8px;border-right:1px solid var(--border)">
+    <span style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Bakiye</span>
+    <span id="pf_balance" style="font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;color:var(--green)">$—</span>
     <a id="pf_scan_link" href="https://polygonscan.com/address/0xf32F6e0F09EEc34ebac499e704f57728fAB52853" target="_blank" style="color:var(--accent);text-decoration:none;font-size:9px">🔗</a>
   </div>
-  <div style="display:flex;align-items:center;gap:5px;padding-right:10px;border-right:1px solid var(--border)">
-    <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">BTC P&L</span>
-    <span id="pf_btc" style="font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--muted)">$0.00</span>
+  <div style="display:flex;align-items:center;gap:4px;padding-right:8px;border-right:1px solid var(--border)">
+    <span style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">BTC P&L</span>
+    <span id="pf_btc" style="font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;color:var(--muted)">$0.00</span>
   </div>
-  <div style="display:flex;align-items:center;gap:5px;padding-right:10px;border-right:1px solid var(--border)">
-    <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Maliyet</span>
-    <span id="pf_cost" style="font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--muted)">$0.00</span>
+  <div style="display:flex;align-items:center;gap:4px;padding-right:8px;border-right:1px solid var(--border)">
+    <span style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Maliyet</span>
+    <span id="pf_cost" style="font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;color:var(--muted)">$0.00</span>
   </div>
-  <div style="display:flex;align-items:center;gap:5px;padding-right:10px;border-right:1px solid var(--border)">
-    <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Redeem</span>
-    <span id="pf_redeem" style="font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--muted)">$0.00</span>
+  <div style="display:flex;align-items:center;gap:4px;padding-right:8px;border-right:1px solid var(--border)">
+    <span style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Redeem</span>
+    <span id="pf_redeem" style="font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;color:var(--muted)">$0.00</span>
   </div>
-  <div style="display:flex;align-items:center;gap:5px;padding-right:10px;border-right:1px solid var(--border)">
-    <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Deposit</span>
-    <span id="pf_deposit" style="font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--yellow)">$0.00</span>
-    <input type="number" id="deposit_input" placeholder="$" step="0.01" style="width:45px;background:transparent;border:1px solid var(--border);color:var(--yellow);padding:1px 4px;border-radius:3px;font-size:9px;text-align:center" onchange="saveDeposit(this.value)">
+  <div style="display:flex;align-items:center;gap:4px;padding-right:8px;border-right:1px solid var(--border)">
+    <span style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Deposit</span>
+    <span id="pf_deposit" style="font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;color:var(--yellow)">$0.00</span>
+    <input type="number" id="deposit_input" placeholder="$" step="0.01" style="width:40px;background:transparent;border:1px solid var(--border);color:var(--yellow);padding:1px 3px;border-radius:3px;font-size:9px;text-align:center" onchange="saveDeposit(this.value)">
   </div>
-  <div style="display:flex;align-items:center;gap:5px;margin-left:auto">
-    <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Net P&L</span>
-    <span id="pf_total" style="font-family:'Barlow',sans-serif;font-size:18px;font-weight:800;color:var(--white)">$0.00</span>
+  <div style="display:flex;align-items:center;gap:4px;margin-left:auto">
+    <span style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Net P&L</span>
+    <span id="pf_total" style="font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;color:var(--white)">$0.00</span>
     <span id="pf_wr" style="font-size:9px;color:var(--muted)">0 işlem</span>
   </div>
 </div>
 
 <!-- Cüzdan & Redeem Paneli — Global, sekmelerin üstünde -->
-<div class="panel" style="margin-bottom:8px">
+<div class="panel" style="margin-bottom:5px">
   <div class="ph"><span class="pt">Cüzdan & Redeem</span>
-    <button onclick="manualRedeem()" style="font-size:9px;padding:3px 10px;background:var(--green);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700" title="Bekleyen pozisyonları redeem et">⚡ REDEEM</button>
+    <button onclick="manualRedeem()" style="font-size:9px;padding:2px 8px;background:var(--green);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700" title="Bekleyen pozisyonları redeem et">⚡ REDEEM</button>
     <button onclick="polySync()" style="font-size:9px;padding:3px 10px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="Polymarket'tan gerçek işlem geçmişini çek">🔃 POLY SYNC</button>
     <button onclick="checkPositions()" style="font-size:9px;padding:3px 10px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="Polymarket'taki gerçek pozisyonları göster">🔍 POZİSYON</button>
     <button onclick="cleanStaleWins()" style="font-size:9px;padding:3px 10px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="pnl=0 olan eski win kayıtlarını temizle">🧹 TEMİZLE</button>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;padding:5px 10px 3px">
+  <div style="display:flex;align-items:center;gap:10px;padding:3px 10px 3px">
     <div>
-      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Bekleyen Redeem</div>
-      <div id="rdm_pending" style="font-size:14px;font-weight:800;color:var(--yellow)">$0.00</div>
+      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Bekleyen Redeem</div>
+      <div id="rdm_pending" style="font-size:12px;font-weight:800;color:var(--yellow)">$0.00</div>
     </div>
     <div id="rdm_status" style="font-size:10px;color:var(--muted);flex:1"></div>
     <!-- hidden but kept for JS compat -->
@@ -379,7 +379,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 
 <!-- ========== TAB 2 BTC ========== -->
 <div class="pane on" id="tb2">
-  <div style="display:flex;flex-wrap:nowrap;align-items:flex-end;gap:8px;padding:10px 12px;background:var(--panel);border-radius:6px;margin-bottom:6px;overflow-x:auto;">
+  <div style="display:flex;flex-wrap:nowrap;align-items:flex-end;gap:6px;padding:6px 10px;background:var(--panel);border-radius:6px;margin-bottom:5px;overflow-x:auto;">
     <!-- İşlem Modu -->
     <div style="flex-shrink:0;min-width:170px;">
       <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">İŞLEM MODU</div>
@@ -451,43 +451,43 @@ tr:hover td{background:rgba(0,240,255,0.03);}
       </div>
       <div class="prbb"><div class="pru" id="b_ub" style="width:50%"></div><div class="prd" id="b_db" style="width:50%"></div></div>
     </div>
-    <div class="mil" style="text-align:right"><label>Sonraki Tarama</label><span id="b_ns" style="color:var(--accent);font-size:20px">—</span></div>
+    <div class="mil" style="text-align:right"><label>Sonraki Tarama</label><span id="b_ns" style="color:var(--accent);font-size:16px">—</span></div>
   </div>
 
   <div class="grid5">
-    <div class="card"><div class="cl">BTC Fiyat</div><div class="cv" id="b_pr" style="font-size:18px">$—</div><div class="cs" id="b_pc">—</div></div>
+    <div class="card"><div class="cl">BTC Fiyat</div><div class="cv" id="b_pr" style="font-size:15px">$—</div><div class="cs" id="b_pc">—</div></div>
     <div class="card g"><div class="cl">Kazanma / Kayıp</div><div class="cv g" id="b_wl">0 / 0</div><div class="cs" id="b_wr">Başarı: —</div></div>
     <div class="card"><div class="cl">Bugün P&L</div><div class="cv" id="b_pnl">$0.00</div><div class="pb"><div class="pbf" id="b_pb" style="width:50%;background:var(--muted)"></div></div></div>
-    <div class="card p"><div class="cl">Tüm Zamanlar P&L</div><div class="cv" id="b_allpnl" style="font-size:18px">$0.00</div><div class="cs" id="b_allwr">Tüm işlemler</div></div>
+    <div class="card p"><div class="cl">Tüm Zamanlar P&L</div><div class="cv" id="b_allpnl" style="font-size:15px">$0.00</div><div class="cs" id="b_allwr">Tüm işlemler</div></div>
   </div>
 
   <!-- Ana grid: Sol=Grafikler, Sağ=Redeem+İşlem+Log -->
-  <div style="display:grid;grid-template-columns:1fr 460px;gap:8px">
+  <div style="display:grid;grid-template-columns:1fr 420px;gap:6px">
 
     <!-- Sol kolon: P&L + Grafikler -->
-    <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;flex-direction:column;gap:5px">
       <div class="panel">
         <div class="ph"><span class="pt">Kümülatif P&L Grafiği</span><span class="cb" id="b_trd">0 işlem</span></div>
-        <div style="padding:4px 8px"><canvas id="pnlChart" height="70"></canvas></div>
+        <div style="padding:3px 8px"><canvas id="pnlChart" height="55"></canvas></div>
       </div>
       <!-- İki grafik yan yana: 5dk solda, 1dk sağda -->
       <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">
         <div class="panel">
           <div class="ph"><span class="pt">BTC/USDT 5 Dakika</span><span style="font-size:10px;color:var(--muted)">Son 3 mum</span></div>
-          <div style="padding:6px 8px 4px 8px"><canvas id="btcChart5m" height="220"></canvas></div>
+          <div style="padding:4px 6px 3px 6px"><canvas id="btcChart5m" height="180"></canvas></div>
         </div>
         <div class="panel">
           <div class="ph"><span class="pt">BTC/USDT 1 Dakika</span><span style="font-size:10px;color:var(--muted)">Son 10 mum • Sinyal</span></div>
-          <div style="position:relative;padding:8px 8px 4px 8px">
-            <div id="fvg_signal_bar" style="display:none;position:absolute;top:12px;right:12px;z-index:10;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;pointer-events:none"></div>
-            <canvas id="btcChart" height="220"></canvas>
+          <div style="position:relative;padding:4px 6px 3px 6px">
+            <div id="fvg_signal_bar" style="display:none;position:absolute;top:8px;right:10px;z-index:10;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;pointer-events:none"></div>
+            <canvas id="btcChart" height="180"></canvas>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Sağ kolon: İşlem Geçmişi + Log -->
-    <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;flex-direction:column;gap:5px">
       <!-- İşlem Geçmişi -->
       <div class="panel" style="flex:1">
         <div class="ph"><span class="pt">İşlem Geçmişi</span><span id="b_hist_mode" style="font-size:9px;color:var(--muted);margin-left:6px"></span></div>
@@ -506,7 +506,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
           <span id="open_trade_info"></span>
           <span id="open_trade_potential"></span>
         </div>
-        <div style="overflow-x:auto;overflow-y:auto;max-height:280px">
+        <div style="overflow-x:auto;overflow-y:auto;max-height:200px">
           <table style="width:100%;table-layout:auto">
             <thead><tr>
               <th style="white-space:nowrap;width:65px">Saat</th>
@@ -522,7 +522,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
       <!-- Log -->
       <div class="panel lp">
         <div class="ph"><span class="pt">BTC Bot Log</span><button class="btn" style="font-size:9px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--muted)" onclick="clrLog('bLog')">SİL</button><button class="btn" style="font-size:9px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--accent);margin-left:4px" onclick="showLogOptions()">⬇ LOG</button></div>
-        <div class="lc" id="bLog" style="max-height:380px"><div class="le li"><span class="lt">--:--:--</span>BTC botu hazır. Ayarları girip Başlat'a basın.</div></div>
+        <div class="lc" id="bLog" style="max-height:220px"><div class="le li"><span class="lt">--:--:--</span>BTC botu hazır. Ayarları girip Başlat'a basın.</div></div>
       </div>
     </div>
 
@@ -540,7 +540,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.58'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.59'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
