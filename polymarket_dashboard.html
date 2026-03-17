@@ -313,18 +313,11 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 
 <!-- Cüzdan & Redeem Paneli — Global, sekmelerin üstünde -->
 <div class="panel" style="margin-bottom:8px">
-  <div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;">
-    <span class="pt">Cüzdan & Redeem</span>
-    <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
-      <div style="display:flex;gap:4px;">
-        <button onclick="manualRedeem()" style="font-size:9px;padding:2px 8px;background:var(--green);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-weight:700">⚡ REDEEM</button>
-        <button onclick="polySync()" style="font-size:9px;padding:2px 8px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-weight:700">🔃 POLY SYNC</button>
-      </div>
-      <div style="display:flex;gap:4px;">
-        <button onclick="checkPositions()" style="font-size:9px;padding:2px 8px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-weight:700">🔍 POZİSYON</button>
-        <button onclick="cleanStaleWins()" style="font-size:9px;padding:2px 8px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:4px;cursor:pointer;font-weight:700">🧹 TEMİZLE</button>
-      </div>
-    </div>
+  <div class="ph"><span class="pt">Cüzdan & Redeem</span>
+    <button onclick="manualRedeem()" style="font-size:9px;padding:3px 10px;background:var(--green);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700" title="Bekleyen pozisyonları redeem et">⚡ REDEEM</button>
+    <button onclick="polySync()" style="font-size:9px;padding:3px 10px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="Polymarket'tan gerçek işlem geçmişini çek">🔃 POLY SYNC</button>
+    <button onclick="checkPositions()" style="font-size:9px;padding:3px 10px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="Polymarket'taki gerçek pozisyonları göster">🔍 POZİSYON</button>
+    <button onclick="cleanStaleWins()" style="font-size:9px;padding:3px 10px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="pnl=0 olan eski win kayıtlarını temizle">🧹 TEMİZLE</button>
   </div>
   <div style="display:flex;align-items:center;gap:12px;padding:5px 10px 3px">
     <div>
@@ -447,23 +440,18 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 
   <!-- FVG Sinyal Göstergesi — grafik içinde -->
 
-  <!-- Piyasa + Fiyat + Tarama — tek satır -->
-  <div style="display:flex;align-items:center;gap:10px;padding:5px 10px;background:var(--panel);border-radius:6px;margin-bottom:6px;border:1px solid var(--border);overflow-x:auto;">
-    <div style="flex:1;min-width:0;">
-      <div style="font-size:9px;color:var(--muted);margin-bottom:1px;font-weight:600;letter-spacing:.5px;">MEVCUT PİYASA</div>
-      <span id="b_mt" style="font-size:10px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">Bekleniyor...</span>
-    </div>
-    <div style="flex-shrink:0;min-width:200px;">
-      <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:2px;">
-        <span style="color:var(--green)" id="b_up">UP 50¢</span>
-        <span style="color:var(--red)" id="b_dn">DOWN 50¢</span>
+  <div class="mib">
+    <div class="mil"><label>Mevcut Piyasa</label><span id="b_mt">Bekleniyor...</span></div>
+    <div class="mil"><label>Kapanış</label><span id="b_me">—</span></div>
+    <div class="mil">
+      <label>Gerçek Zamanlı Fiyat</label>
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
+        <span style="color:var(--green)" id="b_up">UP 50%</span>
+        <span style="color:var(--red)" id="b_dn">DOWN 50%</span>
       </div>
       <div class="prbb"><div class="pru" id="b_ub" style="width:50%"></div><div class="prd" id="b_db" style="width:50%"></div></div>
     </div>
-    <div style="flex-shrink:0;text-align:right;">
-      <div style="font-size:9px;color:var(--muted);margin-bottom:1px;font-weight:600;letter-spacing:.5px;">SONRAKI TARAMA</div>
-      <span id="b_ns" style="color:var(--accent);font-size:22px;font-weight:700;">—</span>
-    </div>
+    <div class="mil" style="text-align:right"><label>Sonraki Tarama</label><span id="b_ns" style="color:var(--accent);font-size:20px">—</span></div>
   </div>
 
   <div class="grid5">
