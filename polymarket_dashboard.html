@@ -538,7 +538,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.44'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.45'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1772,7 +1772,7 @@ async function _bScan(){
   }
   var size2=Math.max(5, Math.round(_effectiveBet/price));
   var actualCost=+(size2*price).toFixed(2);
-  lg('bLog','%'+(BS.betPct||5)+'=$'+_pctBet.toFixed(2)+' | Min=$'+(BS.bet||2.5).toFixed(2)+' | Efektif=$'+actualCost,'i');
+  lg('bLog','Efektif bahis: $'+_effectiveBet.toFixed(2)+' | Size='+size2+' | Maliyet=$'+actualCost,'i');
   if(actualCost>_effectiveBet*2){lg('bLog','Maliyet çok yüksek ($'+actualCost+' > $'+(_effectiveBet*2).toFixed(2)+'), geçildi.','w');return;}
 
   lg('bLog','SİNYAL: '+dir+' | FVG Gap='+fvg.pct.toFixed(3)+'% | Poly='+(price*100).toFixed(1)+'%','s');
