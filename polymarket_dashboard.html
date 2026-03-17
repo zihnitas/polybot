@@ -539,7 +539,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.56'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.57'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1502,11 +1502,25 @@ async function _bScan(){
     var _expT = expiredOpens[0];
     var _expEd = new Date(_expT.endDate||_expT.dateISO||'');
     if(!isNaN(_expEd) && Date.now() - _expEd.getTime() > 3*60*1000){
-      lg('bLog','\u26a0\ufe0f S\u00fcres\u00fc dolmu\u015f trade 3dk+ \u2014 zorla temizleniyor.','w');
-      BS.trades = BS.trades.filter(function(x){ return x.id !== _expT.id; });
-      BS.lastMid = null;
-      try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
-      bRender(); bStats();
+      if(_expT.status === 'open'){
+        // Silme — expired olarak işaretle, panelde göster
+        _expT.status = 'expired';
+        BS.lastMid = null;
+        lg('bLog','⏳ Süresi dolmuş trade — expired işaretlendi, redeem bekleniyor: '+_expT.dir+' '+_expT.market.substring(0,25),'w');
+        try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+        bRender(); bStats();
+        // Redeem dene
+        if(_expT.mid && !_expT.dry){
+          fetch(PROXY+'/redeem_market?market_id='+_expT.mid,{method:'POST'})
+            .then(function(r){return r.json();})
+            .then(function(rd){
+              if(rd.redeemed>0){
+                lg('bLog','✅ EXPIRED REDEEM: $'+(rd.payout||0)+' '+rd.txhash.substring(0,14)+'...','o');
+                window._lastRedeemTime = new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Istanbul'});
+              }
+            }).catch(function(){});
+        }
+      }
     }
   }
 
@@ -2149,9 +2163,9 @@ function bRender(){
   // 1. Aktif: endDate geçmemiş → yeni emri engeller (sarı)
   // 2. Süresi dolmuş ama sonuçlanmamış: endDate geçmiş → yeni emri engellemez (gri)
   // 3. Kesinleşmiş: win/loss (ayrı tabloda)
-  var allOpenTrades=BS.trades.filter(function(t){return t.status==='open';});
-  var activeTrade=allOpenTrades.find(function(t){ return !isTradeMarketExpired(t); });
-  var expiredTrade=allOpenTrades.find(function(t){ return isTradeMarketExpired(t); });
+  var allOpenTrades=BS.trades.filter(function(t){return t.status==='open'||t.status==='expired';});
+  var activeTrade=allOpenTrades.find(function(t){ return t.status==='open' && !isTradeMarketExpired(t); });
+  var expiredTrade=allOpenTrades.find(function(t){ return t.status==='expired' || (t.status==='open' && isTradeMarketExpired(t)); });
   var bar=document.getElementById('open_trade_bar');
   var info=document.getElementById('open_trade_info');
   if(bar && info){
@@ -2161,7 +2175,7 @@ function bRender(){
       var isExpired=!activeTrade;
       var dc=showTrade.dir==='UP'?'color:var(--green)':'color:var(--red)';
       var statusBadge=isExpired
-        ?'<span style="background:rgba(100,120,140,.3);color:var(--muted);font-size:9px;padding:1px 6px;border-radius:10px;margin-left:8px">⏳ Sonuç bekleniyor — yeni emir açılabilir</span>'
+        ?'<span style="background:rgba(255,140,0,.2);color:var(--yellow);font-size:9px;padding:1px 6px;border-radius:10px;margin-left:8px">⏳ SÜRESI DOLDU — redeem bekleniyor</span>'
         :'<span style="background:rgba(255,215,0,.2);color:var(--yellow);font-size:9px;padding:1px 6px;border-radius:10px;margin-left:8px">● AKTİF — yeni emir bekliyor</span>';
       bar.style.borderBottomColor=isExpired?'var(--muted)':'var(--yellow)';
       bar.style.background=isExpired?'rgba(100,120,140,0.04)':'rgba(255,215,0,0.06)';
@@ -2456,7 +2470,10 @@ async function fetchRedeemStatus(){
     // pnl=0 win = eski/hatalı kayıt sayısı (gerçekte Polymarket'ta yok)
     var pendingWins=realTrades.filter(function(t){return t.status==='win'&&(parseFloat(t.pnl)||0)===0;}).length;
     var done=totalRedeemed>0?totalRedeemed:0;
-    document.getElementById('rdm_pending').textContent='$'+pending.toFixed(2);
+    // expired trade sayısını da ekle
+    var expiredCount = BS.trades.filter(function(t){return t.status==='expired';}).length;
+    var pendingEl = document.getElementById('rdm_pending');
+    pendingEl.textContent = '$'+pending.toFixed(2) + (expiredCount>0?' ('+expiredCount+' expired)':'');
     document.getElementById('rdm_done').textContent='$'+totalRedeemed.toFixed(2);
     document.getElementById('rdm_cost').textContent='$'+totalCost.toFixed(2);
     var netEl=document.getElementById('rdm_net');
