@@ -32,6 +32,8 @@
   --text2:#aad4f0;
   --white:#ffffff;
   --shadow:0 4px 20px rgba(0,0,0,0.8);
+  --panel:#011520;
+  --hover:#021f30;
 }
 
 /* ── GÜNDÜZ TEMASI ── */
@@ -55,6 +57,8 @@ body.light-theme{
   --text2:#223344;
   --white:#000000;
   --shadow:0 4px 20px rgba(0,0,0,0.15);
+  --panel:#f0f6fc;
+  --hover:#dce8f4;
 }
 body.light-theme{
   background-image:
@@ -308,14 +312,14 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 </div>
 
 <!-- Cüzdan & Redeem Paneli — Global, sekmelerin üstünde -->
-<div class="panel" style="margin-bottom:14px">
+<div class="panel" style="margin-bottom:8px">
   <div class="ph"><span class="pt">Cüzdan & Redeem</span>
     <button onclick="manualRedeem()" style="font-size:9px;padding:3px 10px;background:var(--green);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700" title="Bekleyen pozisyonları redeem et">⚡ REDEEM</button>
     <button onclick="polySync()" style="font-size:9px;padding:3px 10px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="Polymarket'tan gerçek işlem geçmişini çek">🔃 POLY SYNC</button>
     <button onclick="checkPositions()" style="font-size:9px;padding:3px 10px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="Polymarket'taki gerçek pozisyonları göster">🔍 POZİSYON</button>
     <button onclick="cleanStaleWins()" style="font-size:9px;padding:3px 10px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;margin-left:4px" title="pnl=0 olan eski win kayıtlarını temizle">🧹 TEMİZLE</button>
   </div>
-  <div style="display:flex;align-items:center;gap:16px;padding:8px 10px 4px">
+  <div style="display:flex;align-items:center;gap:12px;padding:5px 10px 3px">
     <div>
       <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Bekleyen Redeem</div>
       <div id="rdm_pending" style="font-size:14px;font-weight:800;color:var(--yellow)">$0.00</div>
@@ -333,10 +337,10 @@ tr:hover td{background:rgba(0,240,255,0.03);}
       <div style="font-size:9px;color:var(--muted)" id="transfer_status">Proxy→MM (Çek) | MM→Proxy (Yatır)</div>
     </div>
   </div>
-  <div style="font-size:9px;color:var(--muted);text-align:center;padding:0 10px 6px" id="rdm_status">—</div>
+  <div style="font-size:9px;color:var(--muted);text-align:center;padding:0 10px 3px" id="rdm_status">—</div>
 </div>
 
-<div class="tabs">
+<div class="tabs" style="margin-bottom:6px">
   <button class="tab on" onclick="sw('btc')">BTC 5DK UP/DOWN</button>
 </div>
 
@@ -375,7 +379,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 
 <!-- ========== TAB 2 BTC ========== -->
 <div class="pane on" id="tb2">
-  <div style="display:flex;flex-wrap:nowrap;align-items:flex-end;gap:8px;padding:10px 12px;background:var(--panel);border-radius:6px;margin-bottom:8px;overflow-x:auto;">
+  <div style="display:flex;flex-wrap:nowrap;align-items:flex-end;gap:8px;padding:10px 12px;background:var(--panel);border-radius:6px;margin-bottom:6px;overflow-x:auto;">
     <!-- İşlem Modu -->
     <div style="flex-shrink:0;min-width:170px;">
       <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">İŞLEM MODU</div>
@@ -458,32 +462,32 @@ tr:hover td{background:rgba(0,240,255,0.03);}
   </div>
 
   <!-- Ana grid: Sol=Grafikler, Sağ=Redeem+İşlem+Log -->
-  <div style="display:grid;grid-template-columns:1fr 520px;gap:10px">
+  <div style="display:grid;grid-template-columns:1fr 460px;gap:8px">
 
     <!-- Sol kolon: P&L + Grafikler -->
-    <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;flex-direction:column;gap:8px">
       <div class="panel">
         <div class="ph"><span class="pt">Kümülatif P&L Grafiği</span><span class="cb" id="b_trd">0 işlem</span></div>
-        <div style="padding:6px 8px"><canvas id="pnlChart" height="55"></canvas></div>
+        <div style="padding:4px 8px"><canvas id="pnlChart" height="70"></canvas></div>
       </div>
       <!-- İki grafik yan yana: 5dk solda, 1dk sağda -->
       <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:10px">
         <div class="panel">
           <div class="ph"><span class="pt">BTC/USDT 5 Dakika</span><span style="font-size:10px;color:var(--muted)">Son 3 mum</span></div>
-          <div style="padding:8px 8px 4px 8px"><canvas id="btcChart5m" height="180"></canvas></div>
+          <div style="padding:6px 8px 4px 8px"><canvas id="btcChart5m" height="220"></canvas></div>
         </div>
         <div class="panel">
           <div class="ph"><span class="pt">BTC/USDT 1 Dakika</span><span style="font-size:10px;color:var(--muted)">Son 10 mum • Sinyal</span></div>
           <div style="position:relative;padding:8px 8px 4px 8px">
             <div id="fvg_signal_bar" style="display:none;position:absolute;top:12px;right:12px;z-index:10;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;pointer-events:none"></div>
-            <canvas id="btcChart" height="180"></canvas>
+            <canvas id="btcChart" height="220"></canvas>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Sağ kolon: İşlem Geçmişi + Log -->
-    <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;flex-direction:column;gap:8px">
       <!-- İşlem Geçmişi -->
       <div class="panel" style="flex:1">
         <div class="ph"><span class="pt">İşlem Geçmişi</span><span id="b_hist_mode" style="font-size:9px;color:var(--muted);margin-left:6px"></span></div>
@@ -501,7 +505,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
           <span id="open_trade_info" style="color:var(--text);flex:1;min-width:200px">—</span>
           <span id="open_trade_potential" style="font-size:11px"></span>
         </div>
-        <div style="overflow-x:auto;overflow-y:auto;max-height:220px">
+        <div style="overflow-x:auto;overflow-y:auto;max-height:280px">
           <table style="width:100%;table-layout:auto">
             <thead><tr>
               <th style="white-space:nowrap;width:65px">Saat</th>
@@ -517,7 +521,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
       <!-- Log -->
       <div class="panel lp">
         <div class="ph"><span class="pt">BTC Bot Log</span><button class="btn" style="font-size:9px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--muted)" onclick="clrLog('bLog')">SİL</button><button class="btn" style="font-size:9px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--accent);margin-left:4px" onclick="showLogOptions()">⬇ LOG</button></div>
-        <div class="lc" id="bLog" style="max-height:320px"><div class="le li"><span class="lt">--:--:--</span>BTC botu hazır. Ayarları girip Başlat'a basın.</div></div>
+        <div class="lc" id="bLog" style="max-height:380px"><div class="le li"><span class="lt">--:--:--</span>BTC botu hazır. Ayarları girip Başlat'a basın.</div></div>
       </div>
     </div>
 
@@ -535,7 +539,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.50'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.53'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1487,9 +1491,9 @@ async function _bScan(){
     if(t.status!=='open') return false;
     return !isTradeMarketExpired(t);
   });
-  if(activeBlockingTrade){
-    return; // Aktif market var — bekle
-  }
+  // Aktif trade varsa: FVG hesaplamaya devam et ama aynı yönde emir açma
+  // Hedge için: ters FVG sinyali gelirse izin ver
+  var _hasActiveTrade = !!activeBlockingTrade;
   // Süresi dolmuş open trade'ler varsa 3dk+ geçmişse zorla temizle
   var expiredOpens = BS.trades.filter(function(t){
     return t.status==='open' && isTradeMarketExpired(t);
@@ -1654,6 +1658,19 @@ async function _bScan(){
 
     tDir=fvg.type==='bullish'?'UP':'DOWN';
     flashFVG(tDir);
+
+    // Aktif trade varsa: aynı yönde bloke et, ters yönde hedge izni ver
+    if(_hasActiveTrade){
+      var _actDir = activeBlockingTrade.dir;
+      var _actMid = activeBlockingTrade.mid;
+      if(tDir === _actDir){
+        return; // Aynı yön — bloke
+      } else if(_actMid && mid && _actMid !== mid){
+        return; // Farklı market penceresi — bloke
+      } else {
+        lg('bLog','🔄 HEDGE: Aktif '+_actDir+' var, FVG ters döndü → '+tDir+' emri açılıyor!','w');
+      }
+    }
   } else {
     lg('bLog','Geçerli FVG yok (hepsi ihlal edilmiş veya FVG oluşmadı) → sinyal yok.','i');
     showFVGSignal(null,'fvg_signal_bar');
@@ -2053,6 +2070,11 @@ async function bCheckResult(trade, retries){
                 lg('bLog','Gerçek PnL: bet=$'+trade.bet.toFixed(2)+' payout=$'+rd.payout.toFixed(2)+' kâr=$'+realPnl.toFixed(2),'o');
                 bRender(); bStats(); updatePnlChart();
                 try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
+              } else {
+                // Payout gelmedi — 15sn sonra Poly Sync ile gerçek değeri çek
+                lg('bLog','Payout henüz gelmedi — 15sn sonra Poly Sync tetikleniyor...','i');
+                setTimeout(function(){ polySync(); }, 15000);
+                setTimeout(function(){ polySync(); }, 35000);
               }
               setTimeout(fetchBalance,5000);setTimeout(fetchBalance,12000);setTimeout(fetchBalance,25000);
             } else {

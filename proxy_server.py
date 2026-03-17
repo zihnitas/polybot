@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.24.8"
+VERSION = "3.24.9"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -1498,21 +1498,23 @@ def redeem_market():
             # TX onaylanması birkaç sn sürer, kısa bekle
             if redeemed_count > 0:
                 import time as _time
-                _time.sleep(3)
-                try:
-                    bal_after = 0.0
-                    for addr, _ in addrs:
-                        bal_after += usdc.functions.balanceOf(addr).call() / 1e6
-                    bal_diff = round(bal_after - bal_before, 2)
-                    if bal_diff > 0:
-                        payout = bal_diff
-                    elif payout_from_pos > 0:
-                        payout = payout_from_pos
-                    print(f"[REDEEM] bal_before={bal_before:.2f} bal_after={bal_after:.2f} diff={bal_diff:.2f} pos_payout={payout_from_pos:.2f} → payout={payout:.2f}")
-                except Exception as e:
-                    if payout_from_pos > 0:
-                        payout = payout_from_pos
-                    print(f"[REDEEM] Bakiye farkı hesaplanamadı: {e}, pos_payout kullanılıyor: {payout_from_pos}")
+                # TX onayı için bekle — birden fazla deneme
+                for _wait_sec in [5, 8, 12]:
+                    _time.sleep(_wait_sec)
+                    try:
+                        bal_after = 0.0
+                        for addr, _ in addrs:
+                            bal_after += usdc.functions.balanceOf(addr).call() / 1e6
+                        bal_diff = round(bal_after - bal_before, 2)
+                        print(f"[REDEEM] wait={_wait_sec}s bal_before={bal_before:.2f} bal_after={bal_after:.2f} diff={bal_diff:.2f}")
+                        if bal_diff > 0:
+                            payout = bal_diff
+                            break  # Başarılı
+                    except Exception as e:
+                        print(f"[REDEEM] Bakiye kontrolü hata: {e}")
+                if payout == 0 and payout_from_pos > 0:
+                    payout = payout_from_pos
+                print(f"[REDEEM] Final payout={payout:.2f} pos_payout={payout_from_pos:.2f}")
             elif payout_from_pos > 0:
                 payout = payout_from_pos
 
