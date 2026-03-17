@@ -376,11 +376,28 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 <!-- ========== TAB 2 BTC ========== -->
 <div class="pane on" id="tb2">
   <div class="sbar" style="grid-template-columns:repeat(6,1fr) auto;">
-    <div class="si"><label>Min Maliyet ($)</label><input type="number" id="b_bet" value="2.50" min="1" step="0.5" title="Minimum maliyet tutarı"></div>
-    <div class="si"><label>Bakiye Oranı (%)</label><input type="number" id="b_bet_pct" value="5" min="1" max="50" step="1" title="Bakiyenin yüzde kaçı — min maliyet'ten küçük olamaz"></div>
+    <div class="si" style="grid-column:span 2">
+      <label>BAHİS MODU</label>
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        <button id="b_mode_fixed" onclick="setBetMode('fixed')" style="flex:1;padding:4px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:#000;font-size:11px;font-weight:700;cursor:pointer;">💰 SABİT TUTAR</button>
+        <button id="b_mode_pct" onclick="setBetMode('pct')" style="flex:1;padding:4px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;">📊 ORANSAL</button>
+      </div>
+    </div>
+    <div class="si" id="si_fixed"><label>Sabit Tutar ($)</label><input type="number" id="b_bet" value="2.50" min="1" step="0.5"></div>
+    <div class="si" id="si_pct" style="display:none"><label>Bakiye Oranı (%)</label><input type="number" id="b_bet_pct" value="5" min="1" max="20" step="1"></div>
+    <div class="si" id="si_maxbet" style="display:none"><label>Max Bahis ($)</label><input type="number" id="b_maxbet" value="5" min="2" max="50" step="0.5" title="Oransal bahisin üst sınırı"></div>
     <div class="si"><label>Max Fiyat (≤)</label><input type="number" id="b_mp" value="0.50" min="0.10" max="0.90" step="0.01"></div>
     <div class="si"><label>Tarama (sn)</label><input type="number" id="b_interval" value="15" min="5" max="60" step="5"></div>
     <div class="si"><label>Min Denge (%)</label><input type="number" id="b_balance" value="35" min="30" max="49" step="1"></div>
+    <div class="si"><label>Min FVG Gap (%)</label><input type="number" id="b_minfvg" value="0.03" min="0.01" max="0.5" step="0.01" title="Bu yüzdeden küçük FVG'ler sinyal vermez"></div>
+    <div class="si"><label>Yeni Market Bekle (sn)</label><input type="number" id="b_newwait" value="45" min="0" max="120" step="5" title="Yeni market açılınca bu kadar saniye bekle (likidite oluşsun)"></div>
+    <div class="si"><label>Emir Tipi</label>
+      <div style="display:flex;gap:5px;margin-top:4px;">
+        <button id="b_gtc_btn" onclick="setOrderType('GTC')" style="flex:1;padding:4px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:#000;font-size:10px;font-weight:700;cursor:pointer;">GTC</button>
+        <button id="b_fok_btn" onclick="setOrderType('FOK')" style="flex:1;padding:4px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:10px;cursor:pointer;">⚡ FOK</button>
+      </div>
+    </div>
+    <div class="si" style="grid-column:span 2"><label>Yasak Saatler (TR, virgülle)</label><input type="text" id="b_banhours" value="" placeholder="örn: 0,1,2,22,23" style="width:100%" title="Bu TR saatlerinde bot emir açmaz"></div>
     <div class="si"><label>Mod</label><select id="b_mod"><option value="dry">DEMO</option><option value="live">CANLI (Gerçek Para)</option></select></div>
     <div style="display:flex;flex-direction:column;gap:5px;justify-content:flex-end">
       <button class="btn btn-a" id="startStopBtn" onclick="bToggle()">BAŞLAT</button>
@@ -488,7 +505,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.36'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.40'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -534,6 +551,35 @@ function lg(id,msg,t){
   }
 }
 function clrLog(id){ document.getElementById(id).innerHTML=''; lg(id,'Log temizlendi.'); }
+
+function setOrderType(type){
+  var gtc=document.getElementById('b_gtc_btn');
+  var fok=document.getElementById('b_fok_btn');
+  if(type==='FOK'){
+    fok.style.background='var(--accent)';fok.style.color='#000';fok.style.border='1px solid var(--accent)';
+    gtc.style.background='transparent';gtc.style.color='var(--muted)';gtc.style.border='1px solid var(--border)';
+  } else {
+    gtc.style.background='var(--accent)';gtc.style.color='#000';gtc.style.border='1px solid var(--accent)';
+    fok.style.background='transparent';fok.style.color='var(--muted)';fok.style.border='1px solid var(--border)';
+  }
+}
+
+function setBetMode(mode){
+  var fixedBtn=document.getElementById('b_mode_fixed');
+  var pctBtn=document.getElementById('b_mode_pct');
+  var siFixed=document.getElementById('si_fixed');
+  var siPct=document.getElementById('si_pct');
+  var siMax=document.getElementById('si_maxbet');
+  if(mode==='fixed'){
+    fixedBtn.style.background='var(--accent)'; fixedBtn.style.color='#000'; fixedBtn.style.border='1px solid var(--accent)';
+    pctBtn.style.background='transparent'; pctBtn.style.color='var(--muted)'; pctBtn.style.border='1px solid var(--border)';
+    siFixed.style.display=''; siPct.style.display='none'; siMax.style.display='none';
+  } else {
+    pctBtn.style.background='var(--accent)'; pctBtn.style.color='#000'; pctBtn.style.border='1px solid var(--accent)';
+    fixedBtn.style.background='transparent'; fixedBtn.style.color='var(--muted)'; fixedBtn.style.border='1px solid var(--border)';
+    siFixed.style.display='none'; siPct.style.display=''; siMax.style.display='';
+  }
+}
 
 function showLogOptions(){
   var ex=document.getElementById('_logModal');
@@ -1428,13 +1474,23 @@ async function _bScan(){
     return;
   }
 
-  // 0c. Yeni 5dk penceresi başladıysa token ID'leri sıfırla — yeni market
+  // 0c. Yeni 5dk penceresi başladıysa token sıfırla + bekleme süresi başlat
   var _curSlot=Math.floor(Date.now()/1000/300)*300;
   if(BS._lastSlot && BS._lastSlot !== _curSlot){
     _liveTokens.up=''; _liveTokens.down='';
     BS._liveUp=0; BS._liveDn=0;
+    BS._newMarketTs=Date.now(); // Yeni market başlangıç zamanı
+    lg('bLog','🆕 Yeni market penceresi — '+BS.newMarketWait+'sn bekleniyor...','i');
   }
   BS._lastSlot=_curSlot;
+
+  // Yeni market açıldıktan sonra bekleme süresi
+  var _newMarketWait = (BS.newMarketWait||45) * 1000;
+  if(BS._newMarketTs && Date.now() - BS._newMarketTs < _newMarketWait){
+    var _remainSec = Math.ceil((_newMarketWait - (Date.now()-BS._newMarketTs))/1000);
+    lg('bLog','⏳ Yeni market bekleniyor: '+_remainSec+'sn (likidite oluşsun)','i');
+    return;
+  }
 
   // 1. Mumlar
   var candles=[];
@@ -1565,6 +1621,19 @@ async function _bScan(){
     var fvgInSlot = allCandles1m[fvg.idx] && allCandles1m[fvg.idx].time >= slotStart5m;
     var fvgLabel = fvgInSlot ? 'MEVCUT PENCERE' : fvgAge+' mum önce (önceki pencere)';
     lg('bLog','✅ Geçerli FVG: '+fvg.type.toUpperCase()+' | Gap='+(fvg.top-fvg.bottom).toFixed(1)+'$ | '+fvgLabel,'s');
+    // Min FVG gap filtresi
+    var _minFvg = BS.minFvgPct || 0.03;
+    if(fvg.pct < _minFvg){
+      lg('bLog','FVG gap çok küçük ('+fvg.pct.toFixed(3)+'% < min '+_minFvg+'%) — sinyal geçildi.','w');
+      showFVGSignal(null,'fvg_signal_bar'); return;
+    }
+    // Yasak saat kontrolü
+    var _curHour = new Date().getHours();
+    var _banHours = BS.banHours||[];
+    if(_banHours.indexOf(_curHour) !== -1){
+      lg('bLog','Yasak saat: TR '+_curHour+':xx — bot bu saatte çalışmıyor.','w');
+      showFVGSignal(null,'fvg_signal_bar'); return;
+    }
     tDir=fvg.type==='bullish'?'UP':'DOWN';
     flashFVG(tDir);
   } else {
@@ -1663,8 +1732,19 @@ async function _bScan(){
   }catch(e){}
 
   // Maliyet: bakiyenin %BS.betPct'i VEYA minimum BS.bet — hangisi büyükse
-  var _pctBet = _curBalForTrade > 0 ? +(_curBalForTrade * (BS.betPct||5) / 100).toFixed(2) : 0;
-  var _effectiveBet = Math.max(BS.bet||2.5, _pctBet);
+  var _effectiveBet;
+  if(BS.betMode==='pct' && _curBalForTrade > 0){
+    // Oransal mod: bakiyenin %X'i, max sınır var
+    var _pctBet = +(_curBalForTrade * (BS.betPct||5) / 100).toFixed(2);
+    var _maxBet = BS.maxBet||5;
+    _effectiveBet = Math.min(_pctBet, _maxBet);
+    _effectiveBet = Math.max(2.5, _effectiveBet); // minimum $2.5
+    lg('bLog','Bahis (oransal): %'+(BS.betPct||5)+' × $'+_curBalForTrade.toFixed(2)+' = $'+_effectiveBet.toFixed(2)+' (max $'+_maxBet+')','i');
+  } else {
+    // Sabit mod: direkt tutar
+    _effectiveBet = BS.bet||2.5;
+    lg('bLog','Bahis (sabit): $'+_effectiveBet.toFixed(2),'i');
+  }
   var size2=Math.max(5, Math.round(_effectiveBet/price));
   var actualCost=+(size2*price).toFixed(2);
   lg('bLog','%'+(BS.betPct||5)+'=$'+_pctBet.toFixed(2)+' | Min=$'+(BS.bet||2.5).toFixed(2)+' | Efektif=$'+actualCost,'i');
@@ -1681,9 +1761,22 @@ async function _bScan(){
     if(!tokenId){lg('bLog','Token ID eksik, emir gönderilemedi.','e');}
     else {
       try{
-        var or2=await fetch(PROXY+'/place_order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token_id:tokenId,price:price,size:size2,side:'BUY'})});
+        var _orderType = BS.useFOK ? 'FOK' : 'GTC';
+        var or2=await fetch(PROXY+'/place_order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token_id:tokenId,price:price,size:size2,side:'BUY',order_type:_orderType})});
         var od2=await or2.json();
-        if(od2.success){lg('bLog','[CANLI] EMİR GÖNDERİLDİ: BUY '+dir+' @ '+price.toFixed(3)+' | $'+BS.bet,'o');orderOk=true;fetchBalance();}
+        if(od2.success){
+          var _orderStr = od2.order ? JSON.stringify(od2.order) : '';
+          var _isFilled = _orderStr.indexOf('"matched"')>=0 || _orderStr.indexOf('matched')>=0;
+          var _status = BS.useFOK ? (_isFilled?'✅ ANINDA MATCH':'❌ FOK — dolmadı, iptal') : '';
+          lg('bLog','[CANLI] EMİR GÖNDERİLDİ: BUY '+dir+' @ '+price.toFixed(3)+' | $'+_effectiveBet.toFixed(2)+' | '+_orderType+' '+_status,'o');
+          if(BS.useFOK && !_isFilled){
+            // FOK dolmadı — trade kaydetme, bir sonraki taramada tekrar dene
+            lg('bLog','FOK emri dolmadı — trade açılmadı, sinyal beklenecek.','w');
+            fetchBalance();
+            return;
+          }
+          orderOk=true;fetchBalance();
+        }
         else{
           lg('bLog','EMİR HATASI: '+od2.error,'e');
           // Bakiye yetersizse botu otomatik durdur
@@ -1704,9 +1797,14 @@ async function _bScan(){
     try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
     bRender();
 
-    // 45sn sonra pozisyon gerçekten oluştu mu kontrol et
+    // FOK'ta anında match — 45sn kontrol gerekmiyor
+    // GTC'de 45sn sonra kontrol et
     if(!BS.dry){
       var potEl=document.getElementById('open_trade_potential');
+      if(BS.useFOK){
+        // FOK — zaten match oldu, direkt sonuç bekle
+        if(potEl) potEl.innerHTML='<span style="color:var(--green);font-size:10px">⚡ FOK — anında match</span>';
+      } else {
       if(potEl) potEl.innerHTML='<span style="color:var(--muted);font-size:10px">⏳ Match kontrol ediliyor (45sn)...</span>';
       setTimeout(async function(){
         var chk=BS.trades.find(function(x){return x.id===trade.id;});
@@ -1790,6 +1888,7 @@ async function _bScan(){
           }
         }catch(e){ lg('bLog','Pozisyon kontrol hata — emir korunuyor: '+e.message,'w'); }
       }, 45000);
+      } // GTC else sonu
     }
 
     // BTC 5dk market genellikle kapanıştan 10-60sn içinde resolve oluyor
@@ -2159,8 +2258,17 @@ function bToggle(){
 }
 
 function bStart(){
+  BS.betMode=document.getElementById('b_mode_fixed').style.background!=='transparent'?'fixed':'pct';
   BS.bet=parseFloat(document.getElementById('b_bet').value)||2.5;
   BS.betPct=parseFloat(document.getElementById('b_bet_pct').value)||5;
+  BS.maxBet=parseFloat(document.getElementById('b_maxbet').value)||5;
+  BS.minFvgPct=parseFloat(document.getElementById('b_minfvg').value)||0.03;
+  BS.newMarketWait=parseFloat(document.getElementById('b_newwait').value)||45;
+  BS.useFOK = document.getElementById('b_fok_btn') && 
+              document.getElementById('b_fok_btn').style.background !== 'transparent' &&
+              document.getElementById('b_fok_btn').style.background !== '';
+  var _bh=document.getElementById('b_banhours').value||'';
+  BS.banHours=_bh?_bh.split(',').map(function(x){return parseInt(x.trim());}).filter(function(x){return !isNaN(x);}) : [];
   BS.maxPrice=parseFloat(document.getElementById('b_mp').value)||0.50;
   BS.minBalance=(parseFloat(document.getElementById('b_balance').value)||35)/100;
   BS.dry=document.getElementById('b_mod').value==='dry';

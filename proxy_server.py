@@ -12,7 +12,7 @@ load_dotenv()
 # minor → yeni endpoint / özellik
 # patch → hata düzeltme
 # ─────────────────────────────────────────────
-VERSION = "3.24.6"
+VERSION = "3.24.7"
 
 # ─────────────────────────────────────────────
 # KALICI LOG SİSTEMİ — günlük dosyaya yazar
@@ -980,26 +980,46 @@ def place_order():
             signature_type=use_sig,
         )
 
-        order_args = OrderArgs(
-            token_id=token_id,
-            price=round(price, 2),
-            size=round(size, 0),
-            side=side,
-        )
+        order_type_str = data.get('order_type', 'GTC').upper()  # GTC veya FOK
 
-        # İmzalı order oluştur
-        signed = client.create_order(order_args)
+        if order_type_str == 'FOK':
+            # FOK: Limit order + FOK — fiyat belirtilir, anında dolmazsa iptal
+            # max_price dashboard'dan gelir — bu fiyatın üstüne çıkmaz
+            from py_clob_client.clob_types import OrderArgs
+            order_args = OrderArgs(
+                token_id=token_id,
+                price=round(price, 2),
+                size=round(size, 0),
+                side=side,
+            )
+            signed = client.create_order(order_args)
+            bh = _builder_headers()
+            if bh:
+                try: client._headers.update(bh)
+                except AttributeError: pass
+            resp = client.post_order(signed, OrderType.FOK)
+            print(f"[ORDER] FOK yanıtı: {str(resp)[:200]}")
+        else:
+            # GTC: Standart limit order
+            order_args = OrderArgs(
+                token_id=token_id,
+                price=round(price, 2),
+                size=round(size, 0),
+                side=side,
+            )
+            # İmzalı order oluştur
+            signed = client.create_order(order_args)
 
-        # Builder header enjeksiyonu
-        bh = _builder_headers()
-        if bh:
-            try:
-                client._headers.update(bh)
-            except AttributeError:
-                pass
+            # Builder header enjeksiyonu
+            bh = _builder_headers()
+            if bh:
+                try:
+                    client._headers.update(bh)
+                except AttributeError:
+                    pass
 
-        # Gönder — GTC: market kapanana kadar bekle
-        resp = client.post_order(signed, OrderType.GTC)
+            # Gönder — GTC: market kapanana kadar bekle
+            resp = client.post_order(signed, OrderType.GTC)
         print(f"[ORDER] CLOB yanıtı: {str(resp)[:200]}")
         return jsonify({'success': True, 'order': str(resp), 'mode': 'clob'})
 
