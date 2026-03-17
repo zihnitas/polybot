@@ -500,10 +500,11 @@ tr:hover td{background:rgba(0,240,255,0.03);}
           <button id="flt_type_win" onclick="setBTypeFilter('win')" style="font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">✅ Kazandı</button>
           <button id="flt_type_loss" onclick="setBTypeFilter('loss')" style="font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">❌ Kaybetti</button>
         </div>
-        <div id="open_trade_bar" style="display:none;padding:10px 14px;background:rgba(255,215,0,0.06);border-bottom:2px solid var(--yellow);font-size:11px;flex-wrap:wrap;gap:6px;align-items:center">
-          <span style="color:var(--yellow);font-weight:700;font-size:13px">⏳ AÇIK İŞLEM</span>
-          <span id="open_trade_info" style="color:var(--text);flex:1;min-width:200px">—</span>
-          <span id="open_trade_potential" style="font-size:11px"></span>
+        <div id="open_trades_container"></div>
+        <!-- eski id'ler JS uyumluluğu için — gizli -->
+        <div id="open_trade_bar" style="display:none">
+          <span id="open_trade_info"></span>
+          <span id="open_trade_potential"></span>
         </div>
         <div style="overflow-x:auto;overflow-y:auto;max-height:280px">
           <table style="width:100%;table-layout:auto">
@@ -539,7 +540,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.57'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.58'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -2164,40 +2165,45 @@ function bRender(){
   // 2. Süresi dolmuş ama sonuçlanmamış: endDate geçmiş → yeni emri engellemez (gri)
   // 3. Kesinleşmiş: win/loss (ayrı tabloda)
   var allOpenTrades=BS.trades.filter(function(t){return t.status==='open'||t.status==='expired';});
-  var activeTrade=allOpenTrades.find(function(t){ return t.status==='open' && !isTradeMarketExpired(t); });
-  var expiredTrade=allOpenTrades.find(function(t){ return t.status==='expired' || (t.status==='open' && isTradeMarketExpired(t)); });
-  var bar=document.getElementById('open_trade_bar');
-  var info=document.getElementById('open_trade_info');
-  if(bar && info){
-    if(activeTrade || expiredTrade){
-      bar.style.display='flex';
-      var showTrade=activeTrade||expiredTrade;
-      var isExpired=!activeTrade;
-      var dc=showTrade.dir==='UP'?'color:var(--green)':'color:var(--red)';
-      var statusBadge=isExpired
-        ?'<span style="background:rgba(255,140,0,.2);color:var(--yellow);font-size:9px;padding:1px 6px;border-radius:10px;margin-left:8px">⏳ SÜRESI DOLDU — redeem bekleniyor</span>'
-        :'<span style="background:rgba(255,215,0,.2);color:var(--yellow);font-size:9px;padding:1px 6px;border-radius:10px;margin-left:8px">● AKTİF — yeni emir bekliyor</span>';
-      bar.style.borderBottomColor=isExpired?'var(--muted)':'var(--yellow)';
-      bar.style.background=isExpired?'rgba(100,120,140,0.04)':'rgba(255,215,0,0.06)';
-      var tradeTime = showTrade.time || (showTrade.dateISO ? toTR(showTrade.dateISO) : '—');
-      info.innerHTML='<span style="'+dc+';font-weight:700;font-size:13px">'+showTrade.dir+'</span>'
-        +' <span style="font-size:10px;color:var(--muted2)">@ '+(showTrade.price*100).toFixed(1)+'%</span>'
-        +' &nbsp;| Maliyet: <b>$'+showTrade.bet.toFixed(2)+'</b>'
-        +' &nbsp;| <b>'+tradeTime+'</b>'
-        +' &nbsp;| <span style="color:var(--text2);font-size:10px">'+showTrade.market.substring(0,35)+'</span>'
-        +statusBadge;
-      var winAmt=+((showTrade.size*(1-showTrade.price))-showTrade.bet).toFixed(2);
-      var loseAmt=showTrade.bet;
-      var pot=document.getElementById('open_trade_potential');
-      if(pot && !isExpired) pot.innerHTML=
-        '<span style="color:var(--green);font-weight:700">✓ Kazanırsan: +$'+winAmt.toFixed(2)+'</span>'
-        +'&nbsp;&nbsp;<span style="color:var(--red);font-weight:700">✗ Kaybedersen: -$'+loseAmt.toFixed(2)+'</span>';
-      else if(pot && isExpired) pot.innerHTML='<span style="color:var(--muted);font-size:10px">Redeem/sonuç bekleniyor...</span>';
-      var openTrade=showTrade; // compat
+  var container=document.getElementById('open_trades_container');
+  if(container){
+    if(allOpenTrades.length===0){
+      container.innerHTML='';
     } else {
-      bar.style.display='none';
+      var html='';
+      allOpenTrades.forEach(function(tr){
+        var isExp = tr.status==='expired' || (tr.status==='open' && isTradeMarketExpired(tr));
+        var isActive = tr.status==='open' && !isTradeMarketExpired(tr);
+        var dc = tr.dir==='UP'?'var(--green)':'var(--red)';
+        var borderColor = isActive?'var(--yellow)':'var(--muted)';
+        var bgColor = isActive?'rgba(255,215,0,0.06)':'rgba(100,120,140,0.04)';
+        var badge = isActive
+          ?'<span style="background:rgba(255,215,0,.2);color:var(--yellow);font-size:9px;padding:1px 6px;border-radius:10px;margin-left:6px">● AKTİF — yeni emir bekliyor</span>'
+          :'<span style="background:rgba(255,140,0,.2);color:orange;font-size:9px;padding:1px 6px;border-radius:10px;margin-left:6px">⏳ SÜRESI DOLDU — redeem bekleniyor</span>';
+        var trTime = tr.time || (tr.dateISO?toTR(tr.dateISO):'—');
+        var winAmt = +((tr.size*(1-tr.price))-tr.bet).toFixed(2);
+        var potential = isActive
+          ?'<span style="color:var(--green);font-weight:700">✓ Kazanırsan: +$'+winAmt.toFixed(2)+'</span>'
+           +'&nbsp;&nbsp;<span style="color:var(--red);font-weight:700">✗ Kaybedersen: -$'+tr.bet.toFixed(2)+'</span>'
+          :'<span style="color:var(--muted);font-size:10px">Redeem/sonuç bekleniyor...</span>';
+        html += '<div style="padding:8px 14px;background:'+bgColor+';border-bottom:2px solid '+borderColor+';font-size:11px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">'
+          +'<span style="color:var(--yellow);font-weight:700;font-size:12px">⏳ AÇIK İŞLEM</span>'
+          +'<span style="color:'+dc+';font-weight:700;font-size:13px">'+tr.dir+'</span>'
+          +' <span style="color:var(--muted2);font-size:10px">@ '+(tr.price*100).toFixed(1)+'%</span>'
+          +' &nbsp;| Maliyet: <b>$'+tr.bet.toFixed(2)+'</b>'
+          +' &nbsp;| <b>'+trTime+'</b>'
+          +' &nbsp;| <span style="color:var(--text2);font-size:10px">'+tr.market.substring(0,30)+'</span>'
+          +badge
+          +'<span style="width:100%;padding-left:2px">'+potential+'</span>'
+          +'</div>';
+      });
+      container.innerHTML=html;
     }
   }
+  // eski compat — ilk aktif trade
+  var activeTrade=allOpenTrades.find(function(t){return t.status==='open'&&!isTradeMarketExpired(t);});
+  var expiredTrade=allOpenTrades.find(function(t){return t.status==='expired'||(t.status==='open'&&isTradeMarketExpired(t));});
+  var openTrade=activeTrade||expiredTrade; // compat
   if(!trades.length){b.innerHTML='<tr><td colspan="6"><div class="es"><div>--</div>'+( BS_FILTER==='today'?'Bugün işlem yok':BS_FILTER==='week'?'Bu hafta işlem yok':'Henüz işlem yok')+'</div></td></tr>';document.getElementById('b_trd').textContent='0 işlem';return;}
   var closedTrades=trades.filter(function(t){return t.status==='win'||t.status==='loss';});
   // En yeni işlem önde
