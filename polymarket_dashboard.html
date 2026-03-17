@@ -539,7 +539,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.54'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.55'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1796,7 +1796,15 @@ async function _bScan(){
     if(!tokenId){lg('bLog','Token ID eksik, emir gönderilemedi.','e');}
     else {
       try{
-        var _orderType = BS.useFOK ? 'FOK' : 'GTC';
+        // Son kontrol: aynı market + aynı yönde zaten açık trade varsa engelle
+  // Ters yön (hedge) geçer
+  var _liveCheck=BS.trades.find(function(t){return t.status==='open'&&t.id!==trade.id&&!isTradeMarketExpired(t);});
+  if(_liveCheck && _liveCheck.mid===mid && _liveCheck.dir===dir){
+    lg('bLog','⛔ Çift emir engeli — zaten açık '+dir+' trade var, gönderilmedi.','w');
+    return;
+  }
+  // Ters yön açık trade varsa hedge — devam et
+  var _orderType = BS.useFOK ? 'FOK' : 'GTC';
         var or2=await fetch(PROXY+'/place_order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token_id:tokenId,price:price,size:size2,side:'BUY',order_type:_orderType})});
         var od2=await or2.json();
         if(od2.success){
@@ -1841,23 +1849,28 @@ async function _bScan(){
     BS.lastMid=mid;  // trade kaydedildikten sonra set et
     try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
     bRender();
+    // bCheckResult tek noktada planla — FOK ve GTC için
+    if(!BS.dry){
+      var _msEnd;
+      try{
+        var _rem=trade.endDate?new Date(trade.endDate).getTime()-Date.now():0;
+        if(_rem<=30000) _msEnd=8000;
+        else _msEnd=Math.max(8000,_rem-15000);
+        if(_msEnd>300000) _msEnd=10000;
+      }catch(e){ _msEnd=10000; }
+      lg('bLog','Sonuç ilk kontrol ~'+Math.round(_msEnd/1000)+'sn sonra. EndDate='+(trade.endDate||'?'),'i');
+      setTimeout(function(){bCheckResult(trade);},_msEnd);
+    }
 
-    // Sonuç kontrolünü planla (hem FOK hem GTC)
+    // Sonuç kontrolünü planla
     if(!BS.dry){
       var potEl=document.getElementById('open_trade_potential');
       if(BS.useFOK){
-        // FOK: bakiye zaten düştü, direkt sonuç beklemeye geç
+        // FOK: anında match — direkt sonuç beklemeye geç, GTC match kontrolü yok
         if(potEl) potEl.innerHTML='<span style="color:var(--green);font-size:10px">⚡ FOK — sonuç bekleniyor</span>';
-        var msEndFok;
-        try{
-          var remaining2=trade.endDate?new Date(trade.endDate).getTime()-Date.now():0;
-          if(remaining2<=30000) msEndFok=5000;
-          else msEndFok=Math.max(5000,remaining2-15000);
-          if(msEndFok>300000) msEndFok=10000;
-        }catch(e2){ msEndFok=10000; }
-        lg('bLog','Sonuç ilk kontrol ~'+Math.round(msEndFok/1000)+'sn sonra. EndDate='+(trade.endDate||'?'),'i');
-        setTimeout(function(){bCheckResult(trade);},msEndFok);
+        // GTC bloğunu tamamen atla, sadece bCheckResult planla
       } else {
+      // GTC: önce match kontrolü
       if(potEl) potEl.innerHTML='<span style="color:var(--muted);font-size:10px">⏳ Match kontrol ediliyor...</span>';
       setTimeout(async function(){
         var chk=BS.trades.find(function(x){return x.id===trade.id;});
@@ -1946,22 +1959,7 @@ async function _bScan(){
       } // GTC else sonu
     }
 
-    // BTC 5dk market genellikle kapanıştan 10-60sn içinde resolve oluyor
-    // endDate'e yakın olduğumuzda hemen başla, uzaksa endDate-10sn'de başla
-    var endTs=0;
-    try{ var ep=new Date(m.endDate||m.endDateIso||''); if(!isNaN(ep)) endTs=ep.getTime(); }catch(e){}
-    var now=Date.now();
-    var msEnd;
-    if(endTs>0){
-      var remaining=endTs-now;
-      if(remaining<=30000) msEnd=10000;       // 30sn'den az kaldı → 10sn sonra kontrol
-      else msEnd=Math.max(10000,remaining-15000); // endDate'den 15sn önce başla
-    } else {
-      msEnd=15000; // bilinmiyorsa 15sn sonra başla
-    }
-    if(msEnd>300000) msEnd=15000;
-    lg('bLog','Sonuç ilk kontrol ~'+Math.round(msEnd/1000)+'sn sonra. EndDate='+(m.endDate||'?'),'i');
-    setTimeout(function(){bCheckResult(trade);},msEnd);
+    // bCheckResult trade kaydından hemen sonra planlandı (yukarıda)
   }
 }
 
