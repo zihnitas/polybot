@@ -540,7 +540,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.59'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.60'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -2686,6 +2686,8 @@ async function polySync(){
     // KRİTİK: Açık trade varsa dikkatli replace et
     // Yeni emir Polymarket'a gecikmeli yansır — ama resolve olmuşsa güncelle
     var openTrade = BS.trades.find(function(t){ return t.status==='open'; });
+    // Expired trade'leri koru — Poly Sync sonrası silinmesin, dashboard'da görünsün
+    var expiredTrades = BS.trades.filter(function(t){ return t.status==='expired'; });
     if(openTrade){
       // Poly Sync aynı mid'i win/loss olarak döndürdü mü?
       var polyVersion = polyTrades.find(function(t){ return t.mid === openTrade.mid; });
@@ -2714,30 +2716,50 @@ async function polySync(){
         if(isTradeMarketExpired(openTrade)){
           lg('bLog','ℹ️ Poly Sync: market süresi doldu, replace ediliyor.','w');
           BS.trades = polyTrades;
-          // Güvenlik: replace sonrası süresi dolmuş open trade'leri temizle
+          // Güvenlik: sadece status==='open' olan ve süresi dolmuş trade'leri temizle
+          // expired olanlar korunur — dashboard'da görünmeye devam eder
           var _now2=Date.now();
           BS.trades = BS.trades.filter(function(t){
-            if(t.status!=='open') return true;
-            if(!t.endDate) return false; // endDate yoksa kaldır
+            if(t.status!=='open') return true; // open değilse (win/loss/expired) hepsini koru
+            if(!t.endDate) return false; // open ama endDate yoksa kaldır
             var _ed2=new Date(t.endDate);
             if(isNaN(_ed2)) return false;
-            return _now2 < _ed2.getTime(); // sadece aktif olanlar
+            return _now2 < _ed2.getTime(); // open ama süresi dolmamışları koru
+          });
+          // Expired trade'leri geri ekle — Poly Sync'te yoksa bile dashboard'da görünsün
+          expiredTrades.forEach(function(exp){
+            var alreadyIn = BS.trades.find(function(t){ return t.mid && t.mid===exp.mid; });
+            if(!alreadyIn) BS.trades.push(exp);
           });
         } else if(_oEndTs === 0){
-          // endDate bilinmiyor — replace et
+          // endDate bilinmiyor — replace et ama expired'ları koru
           BS.trades = polyTrades;
+          expiredTrades.forEach(function(exp){
+            var alreadyIn = BS.trades.find(function(t){ return t.mid && t.mid===exp.mid; });
+            if(!alreadyIn) BS.trades.push(exp);
+          });
         } else {
           // Market henüz aktif — open trade'i koru, kapalıları güncelle
           var closedFromPoly = polyTrades.filter(function(t){ return t.status!=='open'; });
           BS.trades = [openTrade].concat(closedFromPoly.filter(function(t){
             return t.mid !== openTrade.mid;
           }));
+          // Expired trade'leri de ekle
+          expiredTrades.forEach(function(exp){
+            var alreadyIn = BS.trades.find(function(t){ return t.mid && t.mid===exp.mid; });
+            if(!alreadyIn) BS.trades.push(exp);
+          });
           var remainSec = Math.round((_oEndTs - Date.now())/1000);
           lg('bLog','ℹ️ Poly Sync: açık trade korundu — '+remainSec+'sn kaldı ('+openTrade.dir+')','i');
         }
       }
     } else {
       BS.trades = polyTrades;
+      // openTrade yoksa da expired'ları koru
+      expiredTrades.forEach(function(exp){
+        var alreadyIn = BS.trades.find(function(t){ return t.mid && t.mid===exp.mid; });
+        if(!alreadyIn) BS.trades.push(exp);
+      });
     }
     BS.wins=d.wins; BS.loss=d.losses; BS.pnl=d.total_pnl;
     try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
