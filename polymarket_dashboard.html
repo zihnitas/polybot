@@ -540,7 +540,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.60'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.61'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1487,6 +1487,13 @@ async function bScan(){
   try{ await _bScan(); }catch(e){ lg('bLog','TARAMA HATA: '+e.message,'e'); }
 }
 async function _bScan(){
+  // 0. Yasaklı saat kontrolü — TR saatiyle 23:00-01:00 arası emir gönderilmez
+  var _trHourNow = parseInt(new Date().toLocaleString('tr-TR',{hour:'numeric',hour12:false,timeZone:'Europe/Istanbul'}));
+  if(_trHourNow === 23 || _trHourNow === 0){
+    lg('bLog','⛔ Yasaklı saat (23:00-01:00 TR) — Poly API kararsız, emir atlanıyor.','w');
+    return;
+  }
+
   // 0. Sadece süresi DOLMAMIŞ open trade yeni emri engeller
   var activeBlockingTrade = BS.trades.find(function(t){
     if(t.status!=='open') return false;
