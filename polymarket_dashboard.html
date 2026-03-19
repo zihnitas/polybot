@@ -10,6 +10,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Barlow:wght@400;600;700;800&display=swap');
+/* Sıfırların içindeki nokta/çizgiyi kaldır */
+* { font-variant-numeric: normal; font-feature-settings: "zero" 0; }
 
 /* ── YÜK SEK KONTRAST TEMA — gün ışığı optimizasyonu ── */
 :root{
@@ -415,7 +417,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
     <!-- Min Denge -->
     <div style="flex-shrink:0;min-width:80px;">
       <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;letter-spacing:.5px;">MIN DENGE (%)</div>
-      <input class="pv" type="number" id="b_balance" value="35" min="30" max="49" step="1" style="width:100%;">
+      <input class="pv" type="number" id="b_balance" value="40" min="30" max="49" step="1" style="width:100%;">
     </div>
     <!-- Yeni Market Bekle — sadece GTC'de -->
 
@@ -540,7 +542,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.61'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.63'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1493,6 +1495,10 @@ async function _bScan(){
     lg('bLog','⛔ Yasaklı saat (23:00-01:00 TR) — Poly API kararsız, emir atlanıyor.','w');
     return;
   }
+  if(_trHourNow >= 14 && _trHourNow <= 20){
+    lg('bLog','⛔ Yasaklı saat (14:00-21:00 TR) — düşük performans dönemi, emir atlanıyor.','w');
+    return;
+  }
 
   // 0. Sadece süresi DOLMAMIŞ open trade yeni emri engeller
   var activeBlockingTrade = BS.trades.find(function(t){
@@ -2359,7 +2365,7 @@ function bStart(){
               document.getElementById('b_fok_btn').dataset.active === '1';
 
   BS.maxPrice=parseFloat(document.getElementById('b_mp').value)||0.50;
-  BS.minBalance=(parseFloat(document.getElementById('b_balance').value)||35)/100;
+  BS.minBalance=(parseFloat(document.getElementById('b_balance').value)||40)/100;
   BS.dry=document.getElementById('b_mod').value==='dry';
   BS.interval=(parseInt(document.getElementById('b_interval').value)||15)*1000;
   BS.run=true;
