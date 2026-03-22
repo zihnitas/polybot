@@ -463,6 +463,40 @@ tr:hover td{background:rgba(0,240,255,0.03);}
     <div class="card p"><div class="cl">Tüm Zamanlar P&L</div><div class="cv" id="b_allpnl" style="font-size:15px">$0.00</div><div class="cs" id="b_allwr">Tüm işlemler</div></div>
   </div>
 
+  <!-- Günlük Performans Takip Paneli -->
+  <div style="display:grid;grid-template-columns:repeat(6,1fr) auto auto;gap:5px;margin-bottom:5px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;align-items:center;">
+    <div>
+      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Gün Başı P&L</div>
+      <div id="dp_start" style="font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;color:var(--muted)">—</div>
+    </div>
+    <div>
+      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Günlük Kazanç</div>
+      <div id="dp_today" style="font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;color:var(--muted)">$0.00</div>
+    </div>
+    <div>
+      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Günlük %</div>
+      <div id="dp_pct" style="font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;color:var(--muted)">%0.00</div>
+    </div>
+    <div>
+      <div style="font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Max Kar</div>
+      <div id="dp_maxwin" style="font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;color:var(--green)">$0.00</div>
+      <div id="dp_maxwin_pct" style="font-size:9px;color:var(--green)">%0.00</div>
+    </div>
+    <div>
+      <div style="font-size:9px;color:var(--red);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Max Zarar</div>
+      <div id="dp_maxloss" style="font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;color:var(--red)">$0.00</div>
+      <div id="dp_maxloss_pct" style="font-size:9px;color:var(--red)">%0.00</div>
+    </div>
+    <div>
+      <div style="font-size:9px;color:var(--yellow);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Hedef %</div>
+      <input id="dp_target" type="number" value="5" min="1" max="50" step="0.5"
+        style="width:55px;background:var(--bg3);border:1px solid var(--yellow);color:var(--yellow);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;outline:none;"
+        onchange="dpCheckTarget()" title="Bu % kazanca ulaşınca uyarı ver">
+    </div>
+    <div id="dp_status" style="font-size:10px;color:var(--muted);min-width:80px;text-align:center">—</div>
+    <button onclick="dpReset()" style="font-size:9px;padding:3px 8px;background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:4px;cursor:pointer;font-family:inherit;white-space:nowrap" title="Günü sıfırla (gün başı P&L'i şu an olarak ayarla)">↺ Gün Sıfırla</button>
+  </div>
+
   <!-- Ana grid: Sol=Grafikler, Sağ=Redeem+İşlem+Log -->
   <div style="display:grid;grid-template-columns:1fr 420px;gap:6px">
 
@@ -542,7 +576,7 @@ tr:hover td{background:rgba(0,240,255,0.03);}
 // SHARED
 // ================================================================
 var PROXY = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-var DASHBOARD_VERSION = '7.22.63'; // major.minor.patch — her güncellemede artır
+var DASHBOARD_VERSION = '7.22.64'; // major.minor.patch — her güncellemede artır
 function ts(){ return new Date().toLocaleTimeString('tr-TR',{hour12:false,timeZone:'Europe/Istanbul'}); }
 function tsDate(){ return new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'}); }
 function tsISO(){ return new Date().toISOString(); }
@@ -1495,10 +1529,7 @@ async function _bScan(){
     lg('bLog','⛔ Yasaklı saat (23:00-01:00 TR) — Poly API kararsız, emir atlanıyor.','w');
     return;
   }
-  if(_trHourNow >= 14 && _trHourNow <= 20){
-    lg('bLog','⛔ Yasaklı saat (14:00-21:00 TR) — düşük performans dönemi, emir atlanıyor.','w');
-    return;
-  }
+
 
   // 0. Sadece süresi DOLMAMIŞ open trade yeni emri engeller
   var activeBlockingTrade = BS.trades.find(function(t){
@@ -2680,6 +2711,7 @@ async function polySync(){
     // Deposit güncelle — 0 gelirse mevcut localStorage değerini koru
     if(d.total_deposit > 0){
       saveDeposit(d.total_deposit);
+      dpSetDeposit(d.total_deposit);
       lg('bLog','💰 Toplam Deposit: $'+d.total_deposit.toFixed(2),'i');
     } else {
       var existingDep = parseFloat(localStorage.getItem('polybot_total_deposit')||0);
@@ -2777,6 +2809,7 @@ async function polySync(){
     BS.wins=d.wins; BS.loss=d.losses; BS.pnl=d.total_pnl;
     try{localStorage.setItem('polybot_trades',JSON.stringify(BS.trades.slice(-500)));}catch(e){}
     bRender(); bStats(); updatePnlChart();
+    dpUpdate(d.total_pnl);
   }catch(e){lg('bLog','Poly Sync hata: '+e.message,'e');}
 }
 async function forceRedeem(){
@@ -2947,6 +2980,142 @@ function updatePortfolio(){
 }
 setInterval(updatePortfolio,10000);
 updatePortfolio();
+
+// ================================================================
+// GÜNLÜK PERFORMANS TAKİP SİSTEMİ
+// ================================================================
+var _dp = {
+  startPnl: null,      // Günün başlangıç P&L
+  startDate: null,     // Başlangıç tarihi (YYYY-MM-DD)
+  maxPnl: null,        // Günün max P&L
+  minPnl: null,        // Günün min P&L
+  deposit: 98.77,      // Başlangıç yatırımı — Poly Sync'ten güncellenir
+  targetPct: 5,        // Hedef kar %
+  alerted: false       // Hedef uyarısı gönderildi mi
+};
+
+// localStorage'dan yükle
+(function(){
+  try{
+    var saved = JSON.parse(localStorage.getItem('polybot_dp')||'{}');
+    var today = new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'});
+    if(saved.startDate === today){
+      _dp.startPnl = saved.startPnl;
+      _dp.startDate = saved.startDate;
+      _dp.maxPnl = saved.maxPnl;
+      _dp.minPnl = saved.minPnl;
+      _dp.alerted = saved.alerted||false;
+    }
+  }catch(e){}
+})();
+
+function dpSave(){
+  try{ localStorage.setItem('polybot_dp', JSON.stringify(_dp)); }catch(e){}
+}
+
+function dpInit(currentPnl){
+  var today = new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'});
+  if(_dp.startDate !== today){
+    // Yeni gün — sıfırla
+    _dp.startPnl = currentPnl;
+    _dp.startDate = today;
+    _dp.maxPnl = currentPnl;
+    _dp.minPnl = currentPnl;
+    _dp.alerted = false;
+    dpSave();
+  }
+}
+
+function dpUpdate(currentPnl){
+  if(_dp.startPnl === null) dpInit(currentPnl);
+
+  // Max/min güncelle
+  if(currentPnl > _dp.maxPnl) _dp.maxPnl = currentPnl;
+  if(currentPnl < _dp.minPnl) _dp.minPnl = currentPnl;
+
+  var todayGain = currentPnl - _dp.startPnl;
+  var todayPct = _dp.deposit > 0 ? (todayGain / (_dp.deposit + _dp.startPnl)) * 100 : 0;
+  var maxGain = _dp.maxPnl - _dp.startPnl;
+  var maxLoss = _dp.minPnl - _dp.startPnl;
+  var maxGainPct = _dp.deposit > 0 ? (maxGain / (_dp.deposit + _dp.startPnl)) * 100 : 0;
+  var maxLossPct = _dp.deposit > 0 ? (maxLoss / (_dp.deposit + _dp.startPnl)) * 100 : 0;
+
+  // UI güncelle
+  var startEl = document.getElementById('dp_start');
+  var todayEl = document.getElementById('dp_today');
+  var pctEl = document.getElementById('dp_pct');
+  var maxWinEl = document.getElementById('dp_maxwin');
+  var maxWinPctEl = document.getElementById('dp_maxwin_pct');
+  var maxLossEl = document.getElementById('dp_maxloss');
+  var maxLossPctEl = document.getElementById('dp_maxloss_pct');
+  var statusEl = document.getElementById('dp_status');
+
+  if(startEl) startEl.textContent = (_dp.startPnl>=0?'+$':'-$')+Math.abs(_dp.startPnl).toFixed(2);
+  if(todayEl){
+    todayEl.textContent = (todayGain>=0?'+$':'-$')+Math.abs(todayGain).toFixed(2);
+    todayEl.style.color = todayGain>0?'var(--green)':todayGain<0?'var(--red)':'var(--muted)';
+  }
+  if(pctEl){
+    pctEl.textContent = (todayPct>=0?'+':'')+todayPct.toFixed(2)+'%';
+    pctEl.style.color = todayPct>0?'var(--green)':todayPct<0?'var(--red)':'var(--muted)';
+  }
+  if(maxWinEl) maxWinEl.textContent = (maxGain>=0?'+$':'-$')+Math.abs(maxGain).toFixed(2);
+  if(maxWinPctEl) maxWinPctEl.textContent = (maxGainPct>=0?'+':'')+maxGainPct.toFixed(2)+'%';
+  if(maxLossEl) maxLossEl.textContent = (maxLoss>=0?'+$':'-$')+Math.abs(maxLoss).toFixed(2);
+  if(maxLossPctEl) maxLossPctEl.textContent = (maxLossPct>=0?'+':'')+maxLossPct.toFixed(2)+'%';
+
+  // Hedef kontrol
+  var targetEl = document.getElementById('dp_target');
+  _dp.targetPct = parseFloat((targetEl&&targetEl.value)||5);
+  if(statusEl){
+    if(todayPct >= _dp.targetPct){
+      statusEl.innerHTML = '<span style="color:var(--green);font-weight:700;font-size:11px">🎯 HEDEF ULAŞILDI!</span>';
+      if(!_dp.alerted){
+        _dp.alerted = true;
+        dpSave();
+        // Telegram bildirimi
+        fetch(PROXY+'/notify_trade',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({direction:'HEDEF',price:0,bet:0,status:'win',pnl:todayGain,
+            market:'Günlük hedef %'+_dp.targetPct.toFixed(1)+' ulaşıldı! Şu an: %'+todayPct.toFixed(2),bot:'BTC5'})
+        }).catch(function(){});
+        lg('bLog','🎯 GÜNLÜK HEDEF ULAŞILDI! +$'+todayGain.toFixed(2)+' (%'+todayPct.toFixed(2)+') — botu durdurmayı düşün.','o');
+      }
+    } else {
+      var remaining = _dp.targetPct - todayPct;
+      statusEl.innerHTML = '<span style="color:var(--muted);font-size:9px">Hedefe: %'+remaining.toFixed(1)+' kaldı</span>';
+    }
+  }
+
+  dpSave();
+}
+
+function dpReset(){
+  var currentPnl = BS.pnl || 0;
+  var today = new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'});
+  _dp.startPnl = currentPnl;
+  _dp.startDate = today;
+  _dp.maxPnl = currentPnl;
+  _dp.minPnl = currentPnl;
+  _dp.alerted = false;
+  dpSave();
+  dpUpdate(currentPnl);
+  lg('bLog','↺ Günlük takip sıfırlandı. Yeni başlangıç: '+(currentPnl>=0?'+$':'-$')+Math.abs(currentPnl).toFixed(2),'i');
+}
+
+function dpCheckTarget(){
+  var currentPnl = BS.pnl || 0;
+  _dp.alerted = false; // hedef değişince uyarıyı sıfırla
+  dpUpdate(currentPnl);
+}
+
+// Deposit'i Poly Sync'ten güncelle
+function dpSetDeposit(dep){ if(dep>0){ _dp.deposit=dep; } }
+
+// Her Poly Sync'te çağrılır
+setInterval(function(){
+  var pnl = BS.pnl || 0;
+  dpUpdate(pnl);
+}, 15000);
 
 // Init
 pStats(); bStats();
