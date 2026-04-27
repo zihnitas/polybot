@@ -1,1 +1,1 @@
-# polybot
+#bot
